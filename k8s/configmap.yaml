@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: sgcc-memo
+data:
+  DATABASE_URL: "mysql+aiomysql://memo_user:phoenix@mariadb-service:3306/memo_app"
+  REDIS_URL: "redis://redis-service:6379"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:9092"

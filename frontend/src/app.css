@@ -1,0 +1,82 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+
+
+
+
+/*
+Copyright (c) 2021 Kil Hyung-jin, with Reserved Font Name Pretendard.
+https://github.com/orioncactus/pretendard
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+http://scripts.sil.org/OFL
+*/
+
+@font-face {
+	font-family: 'Pretendard Variable';
+	font-weight: 45 920;
+	font-style: normal;
+	font-display: swap;
+	src: url('/fonts/PretendardVariable.woff2') format('woff2-variations');
+}
+
+@font-face {
+	font-family: 'SogangUniversity';
+	src: url('/fonts/SOGANG_UNIVERSITY_for_windows.ttf') format('truetype');
+}
+
+@theme {
+  /* Font Family 확장 */
+  --font-sogang: "SogangUniversity", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-pretendard-variable: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --breakpoint-desktop: 896px;
+  --breakpoint-tablet: 640px;
+}
+
+@layer base {
+  
+  h1, h2, h3, span, a {
+    font-family: var(--font-sogang);
+  }
+
+  p {
+    font-family: var(--font-pretendard-variable);
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera*/
+  }
+
+  .neon-text {
+    color: #fff;
+    text-shadow:
+      0 0 5px rgba(255, 255, 255, 0.4),
+      0 0 10px rgba(255, 255, 255, 0.3),
+      0 0 20px rgba(255, 255, 255, 0.2),
+      0 0 40px rgba(255, 255, 255, 0.1),
+      0 0 80px rgba(255, 255, 255, 0.05);
+  }
+
+  .hover\:neon-text:hover {
+    color: #fff;
+    text-shadow:
+      0 0 5px rgba(255, 255, 255, 0.4),
+      0 0 10px rgba(255, 255, 255, 0.3),
+      0 0 20px rgba(255, 255, 255, 0.2),
+      0 0 40px rgba(255, 255, 255, 0.1),
+      0 0 80px rgba(255, 255, 255, 0.05);
+  }
+}
+
+body {
+  min-width: 320px;
+  overflow-x: auto;
+}
