@@ -1,6 +1,8 @@
-# Memo App - Cloud Native Architecture
+# sogangcomputerclub.org
 
-FastAPI + SvelteKit 기반 메모 애플리케이션을 Docker, Kubernetes, Redis, Kafka를 활용한 클라우드 네이티브 아키텍처로 마이그레이션한 프로젝트입니다.
+SGCC 공식 홈페이지의 깃허브 레포지토리입니다.
+
+홈페이지는 FastAPI + SvelteKit 기반으로 설계되었으며, SGCC의 공식 서버에서는 홈페이지를 서비스하기 위해 Docker, Kubernetes, Redis, Kafka를 비롯한 클라우드 네이티브 아키텍처를 채택하고 있습니다.
 
 ## 🏗️ 아키텍처 개요
 
@@ -11,7 +13,7 @@ FastAPI + SvelteKit 기반 메모 애플리케이션을 Docker, Kubernetes, Redi
 - **Web Server**: Nginx
 - **Deployment**: 단일 서버
 
-### 새로운 클라우드 네이티브 아키텍처
+### 클라우드 네이티브 아키텍처
 - **Container Platform**: Docker
 - **Orchestration**: Kubernetes
 - **Cache Layer**: Redis
@@ -20,20 +22,6 @@ FastAPI + SvelteKit 기반 메모 애플리케이션을 Docker, Kubernetes, Redi
 - **API Gateway**: Kubernetes Ingress
 - **Service Mesh**: 마이크로서비스 패턴
 
-## 🚀 기능
-
-### Core Features
-- **메모 CRUD**: 생성, 조회, 수정, 삭제
-- **검색 기능**: 제목 및 내용 기반 검색
-- **태그 시스템**: 메모 분류 및 관리
-- **우선순위**: 4단계 우선순위 설정
-
-### Cloud Native Features
-- **Redis 캐싱**: 메모 조회 성능 최적화 (5분 TTL)
-- **Kafka 이벤트**: 메모 생성/삭제 이벤트 스트리밍
-- **Health Check**: 모든 서비스 상태 모니터링
-- **High Availability**: Pod 복제를 통한 고가용성
-- **Auto Scaling**: Kubernetes HPA 지원
 
 ## 📦 서비스 구성
 
@@ -99,52 +87,6 @@ curl http://localhost:8000/health
 }
 ```
 
-## 📊 Redis 캐싱 전략
-
-- **키 패턴**: `memo:{memo_id}`
-- **TTL**: 300초 (5분)
-- **무효화**: 메모 수정/삭제 시 자동 삭제
-
-## 📨 Kafka 이벤트 스트림
-
-### Topic: `memo_events`
-
-#### 메모 생성 이벤트
-```json
-{
-  "event_type": "memo_created",
-  "memo_id": 123,
-  "title": "새 메모",
-  "author": "사용자",
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-#### 메모 삭제 이벤트
-```json
-{
-  "event_type": "memo_deleted",
-  "memo_id": 123,
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
-## 🔒 보안 설정
-
-### Environment Variables
-```bash
-DATABASE_URL=mysql+aiomysql://user:password@db:3306/memo_app
-REDIS_URL=redis://redis:6379
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-```
-
-### Kubernetes Secrets (권장)
-```bash
-kubectl create secret generic app-secrets \
-  --from-literal=db-password=secure-password \
-  --from-literal=db-user=memo_user \
-  -n memo-app
-```
 
 ## 🛠️ 개발 가이드
 
@@ -183,23 +125,6 @@ production/
 ├── requirements.txt     # Python 의존성
 └── README.md           # 문서
 ```
-
-## 📈 성능 최적화
-
-### 1. 캐싱 전략
-- Redis를 통한 자주 조회되는 메모 캐싱
-- 캐시 히트율 모니터링
-- TTL 기반 자동 만료
-
-### 2. 데이터베이스 최적화
-- Connection Pool 설정 (10-20 connections)
-- 인덱스 활용 (id, title, created_at)
-- 비동기 쿼리 처리
-
-### 3. Kubernetes 리소스
-- CPU: 100m-500m
-- Memory: 256Mi-1Gi
-- HPA: CPU 70% 기준 자동 스케일링
 
 ## 🚨 트러블슈팅
 
