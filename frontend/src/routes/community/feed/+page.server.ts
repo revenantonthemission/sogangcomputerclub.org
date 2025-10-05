@@ -1,7 +1,7 @@
 import allPosts from "$lib/data/posts.json";
 import { redirect } from "@sveltejs/kit";
 import type { PostSummary } from '$lib';
-import type { PageServerLoad } from "./$types.js";
+import type { PageServerLoad } from "./$types";
 
 const POSTS_PER_PAGE = 10;
 

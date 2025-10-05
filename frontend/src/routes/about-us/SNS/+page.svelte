@@ -88,5 +88,6 @@
           Follow
         </div>
       </a>
+    </div>
   </div>
 </main>

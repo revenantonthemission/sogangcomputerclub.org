@@ -10,7 +10,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - http:
+  - host: sogangcomputerclub.org
+    http:
       paths:
       - path: /api(/|$)(.*)
         pathType: ImplementationSpecific
@@ -30,7 +31,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - http:
+  - host: sogangcomputerclub.org
+    http:
       paths:
       - path: /health
         pathType: Exact
@@ -64,7 +66,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - http:
+  - host: sogangcomputerclub.org
+    http:
       paths:
       - path: /
         pathType: Prefix
