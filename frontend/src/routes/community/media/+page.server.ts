@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { MediaSummary } from '$lib';
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types.js';
 import allMedia from '$lib/data/media_data.json';
 
 const POSTS_PER_PAGE = 12;
