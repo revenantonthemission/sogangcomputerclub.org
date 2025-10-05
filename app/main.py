@@ -1,34 +1,34 @@
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from typing import List, AsyncGenerator, Optional
-from datetime import datetime, date, timezone
+from typing import List, AsyncGenerator, Optional, Dict, Any
+from datetime import datetime, date
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
-import redis.asyncio as redis
-import json
 import os
-import asyncio
+import redis.asyncio as aioredis
 from aiokafka import AIOKafkaProducer
+import json
 
-# --- 기본 설정 ---
-logging.basicConfig(level=logging.INFO)
+# --- Logging Configuration ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# --- 서비스 설정 ---
+# --- Environment Configuration ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+aiomysql://memo_user:phoenix@localhost:3306/memo_app"
+    "mysql+aiomysql://memo_user:phoenix@mariadb:3306/memo_app"
 )
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
 
-# Global services
-redis_client = None
-kafka_producer = None
-
+# --- Database Schema ---
 metadata = sqlalchemy.MetaData()
 memos = sqlalchemy.Table(
     "memos",
@@ -46,64 +46,84 @@ memos = sqlalchemy.Table(
     sqlalchemy.Column("updated_at", sqlalchemy.DateTime, server_default=sqlalchemy.func.now(), onupdate=sqlalchemy.func.now()),
 )
 
-# --- 애플리케이션 생명주기 및 리소스 초기화 ---
+# --- Application Lifespan Management ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Lifespan: 애플리케이션 시작...")
 
-    # Database setup
-    if "sqlite" in DATABASE_URL:
-        engine = create_async_engine(DATABASE_URL, echo=True)
-    else:
-        engine = create_async_engine(
-            DATABASE_URL,
-            echo=True,
-            pool_size=10,
-            max_overflow=20,
-            pool_timeout=30,
-            pool_recycle=3600,
-            pool_pre_ping=True
-        )
-    async_session_factory = async_sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
+    # Initialize Database Engine
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=True,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=3600,
+        pool_pre_ping=True
+    )
+    async_session_factory = async_sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=engine,
+        class_=AsyncSession
+    )
+
     app.state.db_engine = engine
     app.state.db_session_factory = async_session_factory
     logger.info("Lifespan: 데이터베이스 리소스가 app.state에 저장되었습니다.")
 
+    # Create tables
     async with engine.begin() as conn:
         await conn.run_sync(metadata.create_all)
     logger.info("Lifespan: 데이터베이스 테이블이 성공적으로 준비되었습니다.")
 
-    # Redis and Kafka setup
-    global redis_client, kafka_producer
+    # Initialize Redis
     try:
-        redis_client = redis.from_url(REDIS_URL)
+        redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
         await redis_client.ping()
-        logger.info("Redis connected successfully")
+        app.state.redis = redis_client
+        logger.info("Lifespan: Redis 연결 성공")
+    except Exception as e:
+        logger.warning(f"Lifespan: Redis 연결 실패 - {e}")
+        app.state.redis = None
 
+    # Initialize Kafka Producer
+    try:
         kafka_producer = AIOKafkaProducer(
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-            value_serializer=lambda x: json.dumps(x, default=str).encode('utf-8')
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
         )
         await kafka_producer.start()
-        logger.info("Kafka producer started successfully")
+        app.state.kafka = kafka_producer
+        logger.info("Lifespan: Kafka Producer 연결 성공")
     except Exception as e:
-        logger.error(f"Failed to initialize services: {e}")
+        logger.warning(f"Lifespan: Kafka 연결 실패 - {e}")
+        app.state.kafka = None
+
+    logger.info("Lifespan: 모든 서비스가 성공적으로 시작되었습니다.")
 
     yield
 
-    logger.info("Lifespan: 애플리케이션 종료...")
+    # Shutdown
+    logger.info("Lifespan: 애플리케이션 종료 중...")
+
+    if app.state.kafka:
+        await app.state.kafka.stop()
+        logger.info("Lifespan: Kafka Producer 종료 완료")
+
+    if app.state.redis:
+        await app.state.redis.close()
+        logger.info("Lifespan: Redis 연결 종료 완료")
+
     await app.state.db_engine.dispose()
-    if redis_client:
-        await redis_client.close()
-    if kafka_producer:
-        await kafka_producer.stop()
+    logger.info("Lifespan: 데이터베이스 연결 종료 완료")
     logger.info("Lifespan: 모든 서비스가 정상적으로 종료되었습니다.")
 
 
-# --- FastAPI 앱 인스턴스 생성 및 lifespan 연결 ---
+# --- FastAPI Application ---
 app = FastAPI(
     title="Memo API",
-    description="FastAPI, SQLAlchemy 2.0, Asyncio를 사용한 비동기 메모 애플리케이션",
+    description="FastAPI, SQLAlchemy 2.0, Redis, Kafka를 사용한 비동기 메모 애플리케이션",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -116,7 +136,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Pydantic 스키마 정의 ---
+# --- Pydantic Models ---
 class MemoBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=100, description="메모 제목")
     content: str = Field(..., min_length=1, description="메모 내용")
@@ -131,23 +151,24 @@ class MemoCreate(MemoBase):
     pass
 
 class MemoUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=100, description="메모 제목 (선택 사항)")
-    content: Optional[str] = Field(None, min_length=1, description="메모 내용 (선택 사항)")
-    tags: Optional[List[str]] = Field(None, description="태그 목록 (선택 사항)")
-    priority: Optional[int] = Field(None, ge=1, le=4, description="우선순위 (선택 사항)")
-    category: Optional[str] = Field(None, max_length=50, description="카테고리 (선택 사항)")
-    is_archived: Optional[bool] = Field(None, description="아카이브 여부 (선택 사항)")
-    is_favorite: Optional[bool] = Field(None, description="즐겨찾기 여부 (선택 사항)")
-    author: Optional[str] = Field(None, max_length=100, description="작성자 (선택 사항)")
+    title: Optional[str] = Field(None, min_length=1, max_length=100)
+    content: Optional[str] = Field(None, min_length=1)
+    tags: Optional[List[str]] = None
+    priority: Optional[int] = Field(None, ge=1, le=4)
+    category: Optional[str] = Field(None, max_length=50)
+    is_archived: Optional[bool] = None
+    is_favorite: Optional[bool] = None
+    author: Optional[str] = Field(None, max_length=100)
 
 class MemoInDB(MemoBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
     class Config:
         from_attributes = True
 
-# --- 데이터베이스 의존성 주입 ---
+# --- Dependency Injection ---
 async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
     session_factory = request.app.state.db_session_factory
     async with session_factory() as session:
@@ -159,11 +180,52 @@ async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.close()
 
+# --- Health Check Endpoint ---
+@app.get("/health", tags=["System"])
+async def health_check(request: Request) -> Dict[str, Any]:
+    """System health check endpoint"""
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "services": {}
+    }
 
-# --- API 엔드포인트 ---
+    # Check Database
+    try:
+        async with request.app.state.db_session_factory() as session:
+            await session.execute(sqlalchemy.text("SELECT 1"))
+        health_status["services"]["database"] = "healthy"
+    except Exception as e:
+        health_status["services"]["database"] = "unhealthy"
+        health_status["status"] = "degraded"
+        logger.error(f"Database health check failed: {e}")
 
-@app.post("/memos/", response_model=MemoInDB, status_code=status.HTTP_201_CREATED, summary="새 메모 생성")
-async def create_memo(memo: MemoCreate, db: AsyncSession = Depends(get_db)):
+    # Check Redis
+    if request.app.state.redis:
+        try:
+            await request.app.state.redis.ping()
+            health_status["services"]["redis"] = "healthy"
+        except Exception as e:
+            health_status["services"]["redis"] = "unhealthy"
+            health_status["status"] = "degraded"
+            logger.error(f"Redis health check failed: {e}")
+    else:
+        health_status["services"]["redis"] = "unhealthy"
+        health_status["status"] = "degraded"
+
+    # Check Kafka
+    if request.app.state.kafka:
+        health_status["services"]["kafka"] = "healthy"
+    else:
+        health_status["services"]["kafka"] = "unhealthy"
+        health_status["status"] = "degraded"
+
+    return health_status
+
+# --- Memo API Endpoints ---
+@app.post("/memos/", response_model=MemoInDB, status_code=status.HTTP_201_CREATED, tags=["Memos"])
+async def create_memo(memo: MemoCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    """Create a new memo"""
     try:
         query = memos.insert().values(
             title=memo.title,
@@ -183,23 +245,15 @@ async def create_memo(memo: MemoCreate, db: AsyncSession = Depends(get_db)):
         created_memo = await db.execute(created_memo_query)
         memo_data = created_memo.mappings().one()
 
-        # Kafka 이벤트 발행
-        if kafka_producer:
+        # Publish to Kafka
+        if request.app.state.kafka:
             try:
-                event_data = {
-                    "event_type": "memo_created",
-                    "memo_id": created_id,
-                    "title": memo.title,
-                    "author": memo.author,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                await asyncio.wait_for(
-                    kafka_producer.send_and_wait("memo_events", event_data),
-                    timeout=5.0
+                await request.app.state.kafka.send_and_wait(
+                    "memo-created",
+                    {"id": created_id, "title": memo.title, "action": "created"}
                 )
-                logger.info(f"Memo creation event sent for ID: {created_id}")
             except Exception as e:
-                logger.warning(f"Failed to send Kafka event: {e}")
+                logger.warning(f"Failed to publish to Kafka: {e}")
 
         return memo_data
     except Exception as e:
@@ -207,9 +261,9 @@ async def create_memo(memo: MemoCreate, db: AsyncSession = Depends(get_db)):
         logger.error(f"메모 생성 중 오류 발생: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="메모 생성에 실패했습니다.")
 
-
-@app.get("/memos/", response_model=List[MemoInDB], summary="모든 메모 조회")
+@app.get("/memos/", response_model=List[MemoInDB], tags=["Memos"])
 async def read_memos(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
+    """Get all memos"""
     try:
         query = memos.select().order_by(memos.c.id.desc()).offset(skip).limit(limit)
         result = await db.execute(query)
@@ -218,45 +272,25 @@ async def read_memos(skip: int = 0, limit: int = 100, db: AsyncSession = Depends
         logger.error(f"메모 목록 조회 중 오류 발생: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="메모를 불러오는 데 실패했습니다.")
 
-
-@app.get("/memos/{memo_id}", response_model=MemoInDB, summary="특정 메모 조회")
+@app.get("/memos/{memo_id}", response_model=MemoInDB, tags=["Memos"])
 async def read_memo(memo_id: int, db: AsyncSession = Depends(get_db)):
+    """Get a specific memo by ID"""
     try:
-        # Redis 캐시에서 먼저 확인
-        cache_key = f"memo:{memo_id}"
-        if redis_client:
-            try:
-                cached_data = await redis_client.get(cache_key)
-                if cached_data:
-                    return json.loads(cached_data)
-            except Exception as e:
-                logger.warning(f"Redis get error for memo {memo_id}: {e}")
-
         query = memos.select().where(memos.c.id == memo_id)
         result = await db.execute(query)
         memo = result.mappings().first()
         if memo is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID {memo_id}에 해당하는 메모를 찾을 수 없습니다.")
-
-        memo_dict = dict(memo)
-
-        # Redis에 캐시 저장 (5분)
-        if redis_client:
-            try:
-                await redis_client.setex(cache_key, 300, json.dumps(memo_dict, default=str))
-            except Exception as e:
-                logger.warning(f"Redis set error for memo {memo_id}: {e}")
-
-        return memo_dict
+        return memo
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"메모(ID:{memo_id}) 조회 중 오류 발생: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="메모 조회 중 오류가 발생했습니다.")
 
-
-@app.put("/memos/{memo_id}", response_model=MemoInDB, summary="특정 메모 수정")
-async def update_memo(memo_id: int, memo: MemoUpdate, db: AsyncSession = Depends(get_db)):
+@app.put("/memos/{memo_id}", response_model=MemoInDB, tags=["Memos"])
+async def update_memo(memo_id: int, memo: MemoUpdate, request: Request, db: AsyncSession = Depends(get_db)):
+    """Update a memo"""
     try:
         existing_memo_query = memos.select().where(memos.c.id == memo_id)
         existing_memo = (await db.execute(existing_memo_query)).mappings().first()
@@ -273,6 +307,17 @@ async def update_memo(memo_id: int, memo: MemoUpdate, db: AsyncSession = Depends
 
         updated_memo_query = memos.select().where(memos.c.id == memo_id)
         updated_memo = (await db.execute(updated_memo_query)).mappings().one()
+
+        # Publish to Kafka
+        if request.app.state.kafka:
+            try:
+                await request.app.state.kafka.send_and_wait(
+                    "memo-updated",
+                    {"id": memo_id, "action": "updated"}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to publish to Kafka: {e}")
+
         return updated_memo
     except HTTPException:
         raise
@@ -281,9 +326,9 @@ async def update_memo(memo_id: int, memo: MemoUpdate, db: AsyncSession = Depends
         logger.error(f"메모(ID:{memo_id}) 수정 중 오류 발생: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="메모 수정 중 오류가 발생했습니다.")
 
-
-@app.delete("/memos/{memo_id}", status_code=status.HTTP_204_NO_CONTENT, summary="특정 메모 삭제")
-async def delete_memo(memo_id: int, db: AsyncSession = Depends(get_db)):
+@app.delete("/memos/{memo_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Memos"])
+async def delete_memo(memo_id: int, request: Request, db: AsyncSession = Depends(get_db)):
+    """Delete a memo"""
     try:
         existing_memo_query = memos.select().where(memos.c.id == memo_id)
         existing_memo = (await db.execute(existing_memo_query)).mappings().first()
@@ -294,28 +339,15 @@ async def delete_memo(memo_id: int, db: AsyncSession = Depends(get_db)):
         await db.execute(delete_query)
         await db.commit()
 
-        # Redis 캐시 무효화
-        if redis_client:
+        # Publish to Kafka
+        if request.app.state.kafka:
             try:
-                await redis_client.delete(f"memo:{memo_id}")
-            except Exception as e:
-                logger.warning(f"Redis delete error for memo {memo_id}: {e}")
-
-        # Kafka 이벤트 발행
-        if kafka_producer:
-            try:
-                event_data = {
-                    "event_type": "memo_deleted",
-                    "memo_id": memo_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                await asyncio.wait_for(
-                    kafka_producer.send_and_wait("memo_events", event_data),
-                    timeout=5.0
+                await request.app.state.kafka.send_and_wait(
+                    "memo-deleted",
+                    {"id": memo_id, "action": "deleted"}
                 )
-                logger.info(f"Memo deletion event sent for ID: {memo_id}")
             except Exception as e:
-                logger.warning(f"Failed to send Kafka event: {e}")
+                logger.warning(f"Failed to publish to Kafka: {e}")
 
         return None
     except HTTPException:
@@ -325,9 +357,9 @@ async def delete_memo(memo_id: int, db: AsyncSession = Depends(get_db)):
         logger.error(f"메모(ID:{memo_id}) 삭제 중 오류 발생: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="메모 삭제 중 오류가 발생했습니다.")
 
-
-@app.get("/memos/search/", response_model=List[MemoInDB], summary="메모 검색")
+@app.get("/memos/search/", response_model=List[MemoInDB], tags=["Memos"])
 async def search_memos(q: str = Query(..., min_length=1, description="검색어"), db: AsyncSession = Depends(get_db)):
+    """Search memos by keyword"""
     try:
         search_query = f"%{q}%"
         query = memos.select().where(
@@ -336,57 +368,12 @@ async def search_memos(q: str = Query(..., min_length=1, description="검색어"
                 memos.c.content.like(search_query)
             )
         ).order_by(memos.c.id.desc())
-        
+
         result = await db.execute(query)
         return result.mappings().all()
     except Exception as e:
         logger.error(f"메모 검색 중 오류 발생: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="메모 검색 중 오류가 발생했습니다.")
-
-
-@app.get("/health", summary="헬스 체크")
-async def health_check():
-    """서비스 상태 확인"""
-    health_status = {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "services": {}
-    }
-
-    # Database 상태 확인
-    try:
-        engine = app.state.db_engine
-        async with engine.begin() as conn:
-            await conn.execute(sqlalchemy.text("SELECT 1"))
-        health_status["services"]["database"] = "healthy"
-    except Exception:
-        health_status["services"]["database"] = "unhealthy"
-        health_status["status"] = "degraded"
-
-    # Redis 상태 확인
-    if redis_client:
-        try:
-            await redis_client.ping()
-            health_status["services"]["redis"] = "healthy"
-        except Exception:
-            health_status["services"]["redis"] = "unhealthy"
-            health_status["status"] = "degraded"
-    else:
-        health_status["services"]["redis"] = "not_configured"
-
-    # Kafka 상태 확인
-    if kafka_producer:
-        try:
-            await kafka_producer.client.metadata()
-            health_status["services"]["kafka"] = "healthy"
-        except Exception:
-            health_status["services"]["kafka"] = "unhealthy"
-            health_status["status"] = "degraded"
-    else:
-        health_status["services"]["kafka"] = "not_configured"
-
-    return health_status
-
 
 if __name__ == "__main__":
     import uvicorn

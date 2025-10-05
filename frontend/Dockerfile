@@ -1,24 +1,18 @@
-# Use Node.js official image
-FROM node:18-alpine
-
-# Set working directory
+# build stage
+FROM node:18-alpine AS build
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy built application
-COPY build ./build
-COPY package.json ./
-
-# Expose port
+# production stage
+FROM node:18-alpine AS production
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit dev
+COPY --from=build /app/build ./build
 EXPOSE 3000
-
-# Set environment variables
-ENV NODE_ENV=production
-
-# Start the application
+ENV HOST=0.0.0.0
+ENV PORT=3000
 CMD ["node", "build"]
