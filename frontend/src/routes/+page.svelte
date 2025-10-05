@@ -11,52 +11,50 @@
     mobile_slider2,
     mobile_slider3
   ];
-    // 고정된 폭 (% 단위)
-  const fixedWidth = 30;
 
 </script>
 
-<main class="h-[calc(100vh-70px)] overflow-x-hidden">
-  <div class="flex h-full">
+<main class="overflow-x-hidden">
+  <div class="h-screen-minus-header flex">
     <ImageSlider/>
   </div>
-  <div class="relative desktop:justify-start justify-between flex h-full min-h-[512px] flex-col items-center bg-black desktop:bg-[#252525] pt-[calc(10vh)] px-5 desktop:pt-8 text-white">
+  <div class="relative flex h-full min-h-[512px] flex-col items-center justify-between bg-black px-5 pt-[10vh] text-white desktop:justify-start desktop:bg-[#252525] desktop:pt-8">
     
-    <div style="margin-bottom: clamp(1.5rem, 2rem, 2.5rem)" class="flex items-center space-x-7">
-      <h2 class="text-[50px] font-[SogangUniversity] font-normal">Intro:</h2>
-      <h2 class="text-[64px] font-sogang font-normal">SGCC</h2>
+    <div class="mb-8 flex items-center space-x-7 md:mb-10">
+      <h2 class="font-sogang text-[50px] font-normal">Intro:</h2>
+      <h2 class="font-sogang text-[64px] font-normal">SGCC</h2>
     </div>
-    <p class="text-left desktop:text-center text-[20px] font-normal leading-10">
+    <p class="text-left text-[20px] font-normal leading-10 desktop:text-center">
       SGCC는 1982년에 창립된 서강대학교 중앙 컴퓨터 동아리입니다.<br>
       python, C언어 등 기본 프로그래밍 언어 콘서트뿐만 아니라, 유니티, 언리얼 엔진, 웹 등 다양한 분야에서 스터디를 진행하며<br>
       부원의 능력을 끌어 올리는 것을 목표로 활동하고 있습니다. 
     </p>
 
     <!-- Youtube Video -->
-    <iframe class="mb-5 px-10 desktop:mt-4.25 aspect-video h-[calc(92vw*9/16)] desktop:h-[523px]"
+    <iframe class="mb-5 aspect-video h-[51.75vw] px-10 desktop:mt-4.25 desktop:h-[523px]"
       src="https://www.youtube.com/embed/U6bC31Hg2ow"
       title="[SGCC 슬기로운 인디 생활 3기] Uncolored 인 게임 플레이 영상" frameborder="0" 
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
       referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
   </div>
   
-  <div class="relative flex h-full min-h-[930px] desktop:min-h-[1700px] flex-col items-center bg-black px-3 py-[calc(5vh)] desktop:py-28.5 text-white">
-      <h2 class="hidden desktop:block mb-11.5 text-center text-[40px] font-normal">"초보자들을 위한 사다리"</h2>
-      <p class="mb-[calc(5vh)] desktop:mb-12 text-left desktop:text-center text-[20px] font-normal leading-13">
+  <div class="relative flex h-full min-h-[930px] flex-col items-center bg-black px-3 py-[5vh] text-white desktop:min-h-[1700px] desktop:py-28.5">
+      <h2 class="mb-11.5 hidden text-center text-[40px] font-normal desktop:block">"초보자들을 위한 사다리"</h2>
+      <p class="mb-[5vh] text-left text-[20px] font-normal leading-13 desktop:mb-12 desktop:text-center">
         SGCC는 초심자 분들의 프로그래밍 진입 장벽을 낮추기 위해 노력합니다.<br class="hidden desktop:block">
         코딩에 처음 접하시는 분들을 위한 다양한 스터디와 세션을 통해 원하는 컴퓨터 분야에 대해 높은 접근성의 환경을 제공합니다.
       </p>
      
-      <h2 class="hidden desktop:block w-full mb-11.5 text-center text-[40px] font-normal">"협업과 소통의 창"</h2>
-      <p class="text-left desktop:text-center text-[20px] font-normal leading-13">
+      <h2 class="mb-11.5 hidden w-full text-center text-[40px] font-normal desktop:block">"협업과 소통의 창"</h2>
+      <p class="text-left text-[20px] font-normal leading-13 desktop:text-center">
         SGCC는 슬기로운 인디 생활, 초게반 등의 정기적인 인디 게임 개발 활동과 웹 사이트 및 모바일 앱 개발 등<br class="hidden desktop:block">
         다양한 주제의 프로젝트 개발에 참여할 기회를 제공합니다.<br class="hidden desktop:block">
         이를 통해 협업과 소통의 경험을 쌓아 나가실 수 있습니다.
       </p>
 
     <!-- Mobile Image Slider -->
-    <div class="aspect-video max-w-[calc(97vw)] desktop:w-[calc(70vw)] h-[calc(92vw*9/16)]">
-      <div class="w-full h-full overflow-hidden bg-black">
+    <div class="aspect-video h-[51.75vw] max-w-[97vw] desktop:w-[70vw]">
+      <div class="h-full w-full overflow-hidden bg-black">
         <div
           class="flex h-full animate-slide-mobile"
           style="--image-count:{images.length}; --image-width:70%; --image-margin:2.5rem;">
@@ -64,7 +62,7 @@
             <img
               src={image}
               alt="슬라이드 이미지"
-              class="h-full object-contain flex-shrink-0 mx-5"
+              class="mx-5 h-full flex-shrink-0 object-contain"
               style="width: var(--image-width);"
             />
           {/each}
@@ -72,7 +70,7 @@
             <img
               src={image}
               alt="슬라이드 이미지"
-              class="h-full object-contain flex-shrink-0 mx-5"
+              class="mx-5 h-full flex-shrink-0 object-contain"
               style="width: var(--image-width);"
             />
           {/each}
@@ -81,17 +79,17 @@
     </div>
 
     <!-- 더 알아보기 버튼 -->
-    <a href="/about-us/activity" class="mt-1 desktop:mt-17.5 flex h-[45px] w-[188px] items-center justify-center rounded-full bg-[#AE1F1F] text-[24px] font-normal">더 알아보기</a>
+    <a href="/about-us/activity" class="mt-1 flex h-[45px] w-[188px] items-center justify-center rounded-full bg-[#AE1F1F] text-[24px] font-normal desktop:mt-17.5">더 알아보기</a>
   </div>
   
   <div class="relative flex h-full flex-col items-center bg-[#252525] px-3 py-12.5 text-white">
     <h2 class="text-center text-[50px] font-normal">RECRUITING</h2>
-    <p class="my-4.25 desktop:text-center text-[20px] leading-[35px] desktop:text-[24px] font-normal desktop:leading-[40px]">
+    <p class="my-4.25 text-[20px] leading-[35px] desktop:text-center desktop:text-[24px] desktop:leading-[40px] font-normal">
       컴퓨터와 기술을 좋아하고, 새로운 것을 배우는 데 즐거움을 느끼는 사람을 찾습니다.<br>
       함께 프로젝트를 만들고, 서로의 아이디어를 나누며 성장해나갈 여러분을 기다립니다.
     </p>
-    <img class="w-[calc(90vw)] desktop:max-w-[668px] aspect-[16/9] bg-gray-300 object-contain" src="https://give.sogang.ac.kr/resources/_Img/content/campus-map.jpg" alt="포스터">
-    <a href="/notice/recruitment" class="mt-5 desktop:mt-13 flex h-[44px] w-[132px] items-center justify-center rounded-full bg-[#AE1F1F] text-[24px] font-normal text-white">지원하기</a>
+    <img class="aspect-[16/9] w-[90vw] bg-gray-300 object-contain desktop:max-w-[668px]" src="https://give.sogang.ac.kr/resources/_Img/content/campus-map.jpg" alt="포스터">
+    <a href="/notice/recruitment" class="mt-5 flex h-[44px] w-[132px] items-center justify-center rounded-full bg-[#AE1F1F] text-[24px] font-normal text-white desktop:mt-13">지원하기</a>
   </div>
 
   <footer><Footer/></footer>
@@ -112,5 +110,9 @@
 
   .animate-slide-mobile {
     animation: slide-mobile 20s linear infinite;
+  }
+
+  .h-screen-minus-header {
+    height: calc(100vh - 70px);
   }
 </style>
