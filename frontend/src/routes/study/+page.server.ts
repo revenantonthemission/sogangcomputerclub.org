@@ -1,4 +1,4 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types.js';
 import { getMemos } from '$lib/api';
 
 export const load: PageServerLoad = async () => {

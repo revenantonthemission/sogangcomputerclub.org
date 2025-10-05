@@ -1,4 +1,4 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types.js';
 import type { MediaSummary } from '$lib';
 import allMedia from '$lib/data/media_data.json';
 import { slugify } from '$lib';
