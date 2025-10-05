@@ -11,18 +11,21 @@ export const load: PageServerLoad = async ({ url }) => {
     const totalPages = Math.ceil(allPosts.length / POSTS_PER_PAGE);
 
     if (Number(pageParam) != currentPage) {
-        url.searchParams.set("page", currentPage);
-        throw redirect(307, url.toString());
+        const newUrl = new URL(url);
+        newUrl.searchParams.set("page", currentPage.toString());
+        throw redirect(307, newUrl.toString());
     }
 
     if (currentPage < 1) {
-        url.searchParams.set("page", "1");
-        throw redirect(307, url.toString());
+        const newUrl = new URL(url);
+        newUrl.searchParams.set("page", "1");
+        throw redirect(307, newUrl.toString());
     } else if (currentPage > totalPages) {
-        url.searchParams.set("page", totalPages.toString());
-        throw redirect(307, url.toString());
+        const newUrl = new URL(url);
+        newUrl.searchParams.set("page", totalPages.toString());
+        throw redirect(307, newUrl.toString());
     }
-    
+
     const offset = (currentPage - 1) * POSTS_PER_PAGE;
     const slicedPostSummary: PostSummary[] = allPosts.slice(
         offset,
