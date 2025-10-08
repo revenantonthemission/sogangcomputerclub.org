@@ -109,6 +109,8 @@ sogangcomputerclub.org/
 │   ├── fastapi.yaml
 │   ├── frontend.yaml
 │   ├── ingress.yaml
+│   ├── configmap.yaml
+│   ├── kind-config.yaml
 │   └── deploy.sh
 ├── backups/                    # 데이터베이스 백업
 │   └── README.md               # 백업/복구 가이드
