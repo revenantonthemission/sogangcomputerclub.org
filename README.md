@@ -114,7 +114,8 @@ sogangcomputerclub.org/
 │   └── README.md               # 백업/복구 가이드
 ├── docker-compose.yml          # Docker Compose 설정
 ├── Dockerfile                  # Backend 컨테이너 이미지
-├── requirements.txt            # Python 의존성
+├── pyproject.toml              # Python 프로젝트 설정 및 의존성
+├── uv.lock                     # uv 의존성 잠금 파일
 ├── nginx.conf                  # Nginx 메인 설정
 ├── nginx-sogangcomputerclub.conf  # 사이트별 Nginx 설정
 ├── nginx.sh                    # Nginx 시작 스크립트
@@ -128,15 +129,14 @@ sogangcomputerclub.org/
 ### Backend 로컬 개발
 
 ```bash
-# Python 가상환경 생성
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# uv 설치 (설치되지 않은 경우)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 의존성 설치
-pip install -r requirements.txt
+# 의존성 설치 및 가상환경 자동 생성
+uv sync
 
 # 개발 서버 실행
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Frontend 로컬 개발
