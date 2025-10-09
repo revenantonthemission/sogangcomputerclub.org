@@ -15,7 +15,7 @@
 
 	let currentImageIndex: number = 0;
 	const interval: number = 1500;
-	let timer: number;
+	let timer: ReturnType<typeof setTimeout>;
 	
 	function nextImage(): void {
 		showImage((currentImageIndex + 1) % images.length);
