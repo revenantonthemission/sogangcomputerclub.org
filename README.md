@@ -76,13 +76,24 @@ git clone https://github.com/your-org/sogangcomputerclub.org.git
 cd sogangcomputerclub.org
 ```
 
-### 2. 서비스 실행
+### 2. 환경 설정
+
+```bash
+# .env 파일 생성 (예시 파일 복사)
+cp .env.example .env
+
+# .env 파일을 편집하여 보안 설정 변경
+# 특히 데이터베이스 비밀번호를 반드시 변경하세요!
+nano .env  # 또는 원하는 에디터 사용
+```
+
+### 3. 서비스 실행
 
 ```bash
 docker-compose up -d
 ```
 
-### 3. 접속
+### 4. 접속
 
 - **프론트엔드**: http://localhost:3000 (직접 접속)
 - **API 서버**: http://localhost:8000
@@ -220,8 +231,8 @@ npm run build
 ### 자동 백업 설정
 
 - 백업 주기: 매일 새벽 3시
-- 백업 스크립트: /home/rvnnt/sogangcomputerclub.org/backup-database.sh
-- 로그 파일: /home/rvnnt/sogangcomputerclub.org/backups/backup.log
+- 백업 스크립트: `./backup-database.sh`
+- 로그 파일: `./backups/backup.log`
 - Cron 서비스: 실행 중 및 부팅 시 자동 시작 활성화
 
 #### 백업 설정 확인
@@ -235,13 +246,13 @@ crontab -l
 ##### 수동 백업 테스트
 
 ```bash
-/home/rvnnt/sogangcomputerclub.org/backup-database.sh
+./backup-database.sh
 ```
 
 ##### 백업 로그 확인
 
 ```bash
-tail -f /home/rvnnt/sogangcomputerclub.org/backups/backup.log
+tail -f ./backups/backup.log
 ```
 
 ## 🐳 Docker 명령어
@@ -279,8 +290,8 @@ docker-compose down -v
 # Backend 컨테이너 접속
 docker-compose exec fastapi /bin/bash
 
-# MariaDB 접속
-docker-compose exec mariadb mysql -umemo_user -pphoenix memo_app
+# MariaDB 접속 (.env에 설정한 비밀번호 사용)
+docker-compose exec mariadb mysql -umemo_user -p memo_app
 
 # Redis CLI 접속
 docker-compose exec redis redis-cli
@@ -328,39 +339,73 @@ kubectl logs -f deployment/fastapi -n sgcc
 
 ## 🔧 환경 설정
 
-### Backend 환경 변수
+### 환경 변수 설정
 
-`docker-compose.yml`에서 설정:
+프로젝트는 `.env` 파일을 통해 환경 변수를 관리합니다.
 
-```yaml
-environment:
-  - DATABASE_URL=mysql+aiomysql://memo_user:phoenix@mariadb:3306/memo_app
-  - REDIS_URL=redis://redis:6379
-  - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+#### 1. .env 파일 생성
+
+```bash
+# .env.example 파일을 복사하여 .env 생성
+cp .env.example .env
 ```
 
-### Frontend 환경 변수
+#### 2. 필수 환경 변수 설정
 
-`frontend/.env`:
+`.env` 파일 내용:
 
-```text
-VITE_API_URL=http://localhost:8000
+```bash
+# Database Configuration
+MYSQL_ROOT_PASSWORD=your_secure_root_password_here    # 변경 필수!
+MYSQL_DATABASE=memo_app
+MYSQL_USER=memo_user
+MYSQL_PASSWORD=your_secure_password_here              # 변경 필수!
+
+# Database URL for FastAPI
+DATABASE_URL=mysql+aiomysql://memo_user:your_secure_password_here@mariadb:3306/memo_app
+
+# Redis Configuration
+REDIS_URL=redis://redis:6379
+
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+# Backup Configuration
+BACKUP_DIR=./backups
+CONTAINER_NAME_PREFIX=sogangcomputercluborg
+
+# Node Environment
 NODE_ENV=production
 HOST=0.0.0.0
 PORT=3000
 ```
 
-### MariaDB 환경 변수
+> ⚠️ **보안 관련 중요사항**:
+>
+> - `.env` 파일은 Git에 커밋되지 않습니다 (`.gitignore`에 포함됨)
+> - **반드시** 기본 비밀번호(`changeme`, `changeme_root`)를 강력한 비밀번호로 변경하세요
+> - 프로덕션 환경에서는 최소 16자 이상의 복잡한 비밀번호를 사용하세요
 
-```yaml
-environment:
-  - MYSQL_ROOT_PASSWORD=rootpassword
-  - MYSQL_DATABASE=memo_app
-  - MYSQL_USER=memo_user
-  - MYSQL_PASSWORD=phoenix
+### Kubernetes Secrets 설정
+
+Kubernetes 배포 시 Secret을 사용합니다:
+
+```bash
+# 예시 파일 복사
+cp k8s/mariadb-secret.yaml.example k8s/mariadb-secret.yaml
+
+# Secret 파일 편집 후 적용
+kubectl apply -f k8s/mariadb-secret.yaml
 ```
 
-> ⚠️ **보안 주의**: 프로덕션 환경에서는 반드시 강력한 비밀번호로 변경하세요!
+또는 커맨드라인에서 직접 생성:
+
+```bash
+kubectl create secret generic mariadb-secret \
+  --from-literal=MYSQL_ROOT_PASSWORD='your_secure_root_password' \
+  --from-literal=MYSQL_PASSWORD='your_secure_password' \
+  -n sgcc-memo
+```
 
 ## 🧪 테스트
 
@@ -627,10 +672,33 @@ docker-compose exec certbot certbot certificates
 
 ## 🔒 보안
 
-- SSL/TLS 인증서는 Let's Encrypt 사용 권장
-- 프로덕션 환경에서는 반드시 환경 변수로 민감 정보 관리
-- 데이터베이스 비밀번호 변경 필수
-- CORS 설정 확인
+### 보안 체크리스트
+
+- [x] **환경 변수 사용**: 모든 민감 정보는 `.env` 파일로 관리
+- [ ] **비밀번호 변경**: `.env` 파일의 기본 비밀번호를 강력한 비밀번호로 변경
+- [ ] **SSL/TLS 인증서**: Let's Encrypt를 사용한 HTTPS 설정
+- [ ] **Kubernetes Secrets**: K8s 배포 시 Secret 리소스 사용
+- [ ] **CORS 설정**: 프로덕션 환경에 맞게 CORS 설정 조정
+- [ ] **방화벽 설정**: 필요한 포트만 외부에 노출
+
+### Git 보안
+
+`.gitignore`에 다음 파일들이 포함되어 있어 환경 변수 등 중요한 정보는 커밋되지 않습니다:
+
+```text
+.env
+.env.*
+!.env.example
+!.env.template
+```
+
+### CI/CD 환경 변수
+
+GitHub Actions에서는 테스트용 임시 비밀번호가 사용됩니다. 프로덕션 배포 시에는:
+
+1. GitHub Secrets를 사용하여 민감 정보 관리
+2. Kubernetes Secrets를 사용하여 클러스터에 배포
+3. 환경별로 다른 비밀번호 사용
 
 자세한 내용은 [SECURITY.md](SECURITY.md)를 참조하세요.
 

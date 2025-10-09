@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # --- Environment Configuration ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+aiomysql://memo_user:phoenix@mariadb:3306/memo_app"
+    "mysql+aiomysql://memo_user:changeme@mariadb:3306/memo_app"
 )
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")

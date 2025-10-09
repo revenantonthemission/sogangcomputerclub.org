@@ -21,13 +21,19 @@ spec:
         - containerPort: 3306
         env:
         - name: MYSQL_ROOT_PASSWORD
-          value: "rootpassword"
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: MYSQL_ROOT_PASSWORD
         - name: MYSQL_DATABASE
           value: "memo_app"
         - name: MYSQL_USER
           value: "memo_user"
         - name: MYSQL_PASSWORD
-          value: "phoenix"
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secret
+              key: MYSQL_PASSWORD
         volumeMounts:
         - name: mariadb-storage
           mountPath: /var/lib/mysql

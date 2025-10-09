@@ -29,7 +29,11 @@ memos = sqlalchemy.Table(
 async def init_db():
     """데이터베이스 테이블 생성"""
     # CI 환경의 MariaDB 설정
-    DATABASE_URL = "mysql+aiomysql://memo_user:phoenix@localhost:3306/memo_app"
+    import os
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        "mysql+aiomysql://memo_user:phoenix@localhost:3306/memo_app"
+    )
 
     engine = create_async_engine(DATABASE_URL, echo=True)
 

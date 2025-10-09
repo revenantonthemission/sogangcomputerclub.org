@@ -3,11 +3,16 @@
 # Database Restore Script for sogangcomputerclub.org
 # Restores database from a backup file
 
-BACKUP_DIR="/home/rvnnt/sogangcomputerclub.org/backups"
-CONTAINER_NAME="sogangcomputercluborg-mariadb-1"
-DB_USER="memo_user"
-DB_PASS="phoenix"
-DB_NAME="memo_app"
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
+BACKUP_DIR="${BACKUP_DIR:-./backups}"
+CONTAINER_NAME="${CONTAINER_NAME_PREFIX:-sogangcomputercluborg}-mariadb-1"
+DB_USER="${MYSQL_USER:-memo_user}"
+DB_PASS="${MYSQL_PASSWORD:-changeme}"
+DB_NAME="${MYSQL_DATABASE:-memo_app}"
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <backup_file>"
