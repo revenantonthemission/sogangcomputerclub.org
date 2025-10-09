@@ -136,6 +136,10 @@ sogangcomputerclub.org/
 ├── backups/                    # 데이터베이스 백업
 │   └── README.md               # 백업/복구 가이드
 ├── .github/                    # GitHub 설정
+│   ├── workflows/              # GitHub Actions CI/CD
+│   │   ├── backend-ci.yml      # Backend 테스트 자동화
+│   │   ├── docker-build.yml    # Docker 이미지 빌드/푸시
+│   │   └── integration-tests.yml # 통합 테스트 자동화
 │   └── ISSUE_TEMPLATE/         # 이슈 템플릿
 ├── docker-compose.yml          # Docker Compose 설정
 ├── Dockerfile                  # Backend 컨테이너 이미지
@@ -471,9 +475,60 @@ docker-compose exec fastapi ping redis
 docker-compose exec fastapi ping kafka
 ```
 
-## 📦 배포
+## 🚀 CI/CD
 
-### Docker 이미지 빌드
+### GitHub Actions 워크플로우
+
+프로젝트는 GitHub Actions를 통해 자동화된 CI/CD 파이프라인을 제공합니다.
+
+#### 1. Backend CI (`.github/workflows/backend-ci.yml`)
+
+**트리거:**
+- `main`, `master`, `develop`, `feature/backend-tests` 브랜치에 push
+- Pull Request 생성 시
+
+**작업:**
+- Python 3.13 환경에서 단위 테스트 실행
+- 코드 커버리지 측정 및 Codecov 업로드
+- 코드 린팅 (Ruff)
+
+#### 2. Docker Build (`.github/workflows/docker-build.yml`)
+
+**트리거:**
+- `main`, `master` 브랜치에 push
+- 버전 태그 (`v*.*.*`) 생성 시
+
+**작업:**
+- Backend 및 Frontend Docker 이미지 빌드
+- GitHub Container Registry (ghcr.io)에 자동 푸시
+- 이미지 태깅 전략:
+  - 브랜치명 태그
+  - 시맨틱 버전 태그 (`v1.0.0`, `v1.0`)
+  - Git SHA 태그
+
+**이미지 사용:**
+```bash
+# Backend 이미지 pull
+docker pull ghcr.io/your-org/sogangcomputerclub.org/backend:latest
+
+# Frontend 이미지 pull
+docker pull ghcr.io/your-org/sogangcomputerclub.org/frontend:latest
+```
+
+#### 3. Integration Tests (`.github/workflows/integration-tests.yml`)
+
+**트리거:**
+- `main`, `master`, `develop` 브랜치에 push
+- Pull Request 생성 시
+- 매일 새벽 2시 (UTC) 자동 실행
+
+**작업:**
+- MariaDB, Redis 서비스 컨테이너 시작
+- 데이터베이스 연결 테스트
+- Redis 캐시 작업 테스트
+- 테스트 결과 아티팩트 업로드
+
+### 로컬에서 Docker 이미지 빌드
 
 ```bash
 # Backend 이미지
@@ -483,7 +538,7 @@ docker build -t sogangcomputerclub/backend:latest .
 docker build -t sogangcomputerclub/frontend:latest ./frontend
 ```
 
-### 이미지 푸시 (레지스트리 사용시)
+### 수동 이미지 푸시 (레지스트리 사용시)
 
 ```bash
 docker push sogangcomputerclub/backend:latest
