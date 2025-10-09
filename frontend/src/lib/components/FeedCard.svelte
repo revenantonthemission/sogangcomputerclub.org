@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { PostSummary } from '$lib';
 
-    let { data }: PostSummary = $props();
+    let { data }: { data: PostSummary } = $props();
 </script>
 
 <a href={data.url} class="flex h-40 items-center w-full" aria-label="Post Card">

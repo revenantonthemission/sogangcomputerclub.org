@@ -59,8 +59,8 @@
         date = new Date(date.getFullYear(), date.getMonth() + 1, 1);
     }
 
-    function handleYearChange(event: Event) {
-        const selectedYear = parseInt((event.target as HTMLSelectElement).value);
+    function handleYearChange(event: any) {
+        const selectedYear = parseInt(event.currentTarget.value);
         date = new Date(selectedYear, month - 1, 1);
     }
 </script>

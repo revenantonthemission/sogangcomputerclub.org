@@ -14,8 +14,8 @@
     let isModalOpen = $state(false);
 
     // Configure marked
-    marked.setOptions({
-        highlight: function (code, lang) {
+    (marked.setOptions as any)({
+        highlight: function (code: string, lang: string) {
             if (lang && hljs.getLanguage(lang)) {
                 try {
                     return hljs.highlight(code, { language: lang }).value;

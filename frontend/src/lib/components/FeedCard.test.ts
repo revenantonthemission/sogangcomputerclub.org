@@ -5,6 +5,7 @@ import FeedCard from './FeedCard.svelte';
 describe('FeedCard', () => {
 	const mockData = {
 		data: {
+			id: 1,
 			title: 'Test Post Title',
 			excerpt: 'This is a test excerpt for the post',
 			author: 'Test Author',
@@ -64,6 +65,7 @@ describe('FeedCard', () => {
 	it('should render with minimal data', () => {
 		const minimalData = {
 			data: {
+				id: 2,
 				title: 'Minimal Title',
 				excerpt: '',
 				author: '',
