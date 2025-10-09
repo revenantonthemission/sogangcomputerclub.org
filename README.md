@@ -6,7 +6,7 @@
 
 ## 🏗️ 아키텍처
 
-```
+```text
                     ┌──────────┐
                     │ Certbot  │
                     │ (SSL)    │
@@ -93,7 +93,7 @@ docker-compose up -d
 
 ## 📁 프로젝트 구조
 
-```
+```text
 sogangcomputerclub.org/
 ├── app/                        # Backend (FastAPI)
 │   ├── __init__.py
@@ -114,13 +114,24 @@ sogangcomputerclub.org/
 │   └── load/                   # 부하 테스트
 │       ├── locustfile.py       # Locust 트래픽 테스트
 │       └── performance_test.py # 성능 측정 스크립트
+├── scripts/                    # 유틸리티 스크립트
+│   └── init_test_db.py         # CI용 데이터베이스 스키마 초기화
 ├── frontend/                   # Frontend (SvelteKit)
 │   ├── src/                    # 소스 코드
 │   │   ├── routes/             # SvelteKit 라우트
-│   │   └── lib/                # 공유 컴포넌트/유틸
+│   │   ├── lib/                # 공유 컴포넌트/유틸
+│   │   │   ├── components/     # Svelte 컴포넌트
+│   │   │   └── utils/          # 유틸리티 함수
+│   │   ├── __tests__/          # 테스트 파일
+│   │   │   └── routes/         # 페이지 테스트
+│   │   ├── vitest-env.d.ts     # Vitest 타입 선언
+│   │   └── app.html            # HTML 템플릿
 │   ├── static/                 # 정적 파일
 │   ├── Dockerfile              # Frontend 컨테이너 이미지
 │   ├── package.json            # Node.js 의존성
+│   ├── vitest.config.ts        # Vitest 설정
+│   ├── vitest-setup.ts         # 테스트 환경 설정
+│   ├── tsconfig.json           # TypeScript 설정
 │   └── svelte.config.js        # Svelte 설정
 ├── k8s/                        # Kubernetes 매니페스트
 │   ├── namespace.yaml
@@ -138,6 +149,7 @@ sogangcomputerclub.org/
 ├── .github/                    # GitHub 설정
 │   ├── workflows/              # GitHub Actions CI/CD
 │   │   ├── backend-ci.yml      # Backend 테스트 자동화
+│   │   ├── frontend-ci.yml     # Frontend 테스트 자동화
 │   │   ├── docker-build.yml    # Docker 이미지 빌드/푸시
 │   │   └── integration-tests.yml # 통합 테스트 자동화
 │   └── ISSUE_TEMPLATE/         # 이슈 템플릿
@@ -331,7 +343,7 @@ environment:
 
 `frontend/.env`:
 
-```
+```text
 VITE_API_URL=http://localhost:8000
 NODE_ENV=production
 HOST=0.0.0.0
@@ -408,11 +420,39 @@ uv run pytest tests/integration/test_api_e2e.py -v          # E2E API 테스트
 
 ### Frontend 테스트
 
+#### 컴포넌트 및 유틸리티 단위 테스트
+
 ```bash
 cd frontend
+
+# 모든 테스트 실행
 npm run test
 
-# 개발 서버 실행 (Hot Reload)
+# 타입 체크
+npm run check
+
+# 프로덕션 빌드
+npm run build
+```
+
+#### 테스트 항목
+
+- **컴포넌트 테스트 (27개)**
+  - Header, Footer, NavigationBar, FeedCard 등
+- **유틸리티 테스트 (9개)**
+  - slugify 함수
+- **페이지 테스트 (4개)**
+  - 홈페이지, Welcome 페이지
+
+#### 테스트 환경
+
+- Vitest + jsdom
+- @testing-library/svelte
+- @testing-library/jest-dom
+
+#### 개발 서버 실행
+
+```bash
 npm run dev
 ```
 
@@ -432,7 +472,8 @@ uv run locust -f tests/load/locustfile.py --host=http://localhost:8000 \
   --users 100 --spawn-rate 10 --run-time 1m --headless
 ```
 
-**테스트 시나리오:**
+##### 테스트 시나리오
+
 - Health check (30%)
 - 메모 목록 조회 (50%)
 - 메모 생성 (10%)
@@ -445,7 +486,8 @@ uv run locust -f tests/load/locustfile.py --host=http://localhost:8000 \
 uv run python tests/load/performance_test.py
 ```
 
-**측정 항목:**
+##### 측정 항목
+
 - 엔드포인트별 응답 시간 (평균, 중앙값, 최소, 최대, 표준편차)
 - 동시 요청 처리 성능 (10명, 50명, 100명)
 - 초당 처리 가능한 요청 수 (RPS)
@@ -483,22 +525,43 @@ docker-compose exec fastapi ping kafka
 
 #### 1. Backend CI (`.github/workflows/backend-ci.yml`)
 
-**트리거:**
-- `main`, `master`, `develop`, `feature/backend-tests` 브랜치에 push
+##### Trigger
+
+- `main`, `master`, `develop`, `feature/backend-*` 브랜치에 push
+- app/, tests/, pyproject.toml, uv.lock 파일 변경 시
 - Pull Request 생성 시
 
-**작업:**
+##### Jobs
+
 - Python 3.13 환경에서 단위 테스트 실행
 - 코드 커버리지 측정 및 Codecov 업로드
 - 코드 린팅 (Ruff)
 
-#### 2. Docker Build (`.github/workflows/docker-build.yml`)
+#### 2. Frontend CI (`.github/workflows/frontend-ci.yml`)
 
-**트리거:**
+##### Trigger
+
+- `main`, `master`, `develop`, `feature/frontend-*` 브랜치에 push
+- frontend/ 디렉토리 변경 시
+- Pull Request 생성 시
+
+##### Jobs
+
+- Node.js 20.x 환경에서 테스트 실행
+- TypeScript 타입 체크 (svelte-check)
+- 컴포넌트 및 유틸리티 단위 테스트 (Vitest)
+- 프로덕션 빌드 검증
+- 빌드 아티팩트 업로드
+
+#### 3. Docker Build (`.github/workflows/docker-build.yml`)
+
+##### Trigger
+
 - `main`, `master` 브랜치에 push
 - 버전 태그 (`v*.*.*`) 생성 시
 
-**작업:**
+##### Jobs
+
 - Backend 및 Frontend Docker 이미지 빌드
 - GitHub Container Registry (ghcr.io)에 자동 푸시
 - 이미지 태깅 전략:
@@ -506,7 +569,8 @@ docker-compose exec fastapi ping kafka
   - 시맨틱 버전 태그 (`v1.0.0`, `v1.0`)
   - Git SHA 태그
 
-**이미지 사용:**
+#### Docker 이미지 사용
+
 ```bash
 # Backend 이미지 pull
 docker pull ghcr.io/your-org/sogangcomputerclub.org/backend:latest
@@ -515,15 +579,18 @@ docker pull ghcr.io/your-org/sogangcomputerclub.org/backend:latest
 docker pull ghcr.io/your-org/sogangcomputerclub.org/frontend:latest
 ```
 
-#### 3. Integration Tests (`.github/workflows/integration-tests.yml`)
+#### 4. Integration Tests (`.github/workflows/integration-tests.yml`)
 
-**트리거:**
-- `main`, `master`, `develop` 브랜치에 push
+##### Trigger
+
+- `main`, `master`, `develop`, `feature/backend-*` 브랜치에 push
 - Pull Request 생성 시
 - 매일 새벽 2시 (UTC) 자동 실행
 
-**작업:**
+##### Jobs
+
 - MariaDB, Redis 서비스 컨테이너 시작
+- 데이터베이스 스키마 초기화 (scripts/init_test_db.py)
 - 데이터베이스 연결 테스트
 - Redis 캐시 작업 테스트
 - 테스트 결과 아티팩트 업로드
