@@ -3,13 +3,18 @@
 # Database Backup Script for sogangcomputerclub.org
 # Creates timestamped backups of the memo_app database
 
-BACKUP_DIR="/home/rvnnt/sogangcomputerclub.org/backups"
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
+BACKUP_DIR="${BACKUP_DIR:-./backups}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/memo_app_backup_${TIMESTAMP}.sql"
-CONTAINER_NAME="sogangcomputercluborg-mariadb-1"
-DB_USER="memo_user"
-DB_PASS="phoenix"
-DB_NAME="memo_app"
+CONTAINER_NAME="${CONTAINER_NAME_PREFIX:-sogangcomputercluborg}-mariadb-1"
+DB_USER="${MYSQL_USER:-memo_user}"
+DB_PASS="${MYSQL_PASSWORD:-changeme}"
+DB_NAME="${MYSQL_DATABASE:-memo_app}"
 
 # Keep only the last 30 backups
 KEEP_BACKUPS=30

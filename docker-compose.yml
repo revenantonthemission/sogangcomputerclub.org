@@ -4,9 +4,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=mysql+aiomysql://memo_user:phoenix@mariadb:3306/memo_app
-      - REDIS_URL=redis://redis:6379
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - DATABASE_URL=${DATABASE_URL:-mysql+aiomysql://memo_user:changeme@mariadb:3306/memo_app}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
     depends_on:
       - mariadb
       - redis
@@ -19,10 +19,10 @@ services:
   mariadb:
     image: mariadb:10.11
     environment:
-      - MYSQL_ROOT_PASSWORD=rootpassword
-      - MYSQL_DATABASE=memo_app
-      - MYSQL_USER=memo_user
-      - MYSQL_PASSWORD=phoenix
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-changeme_root}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-memo_app}
+      - MYSQL_USER=${MYSQL_USER:-memo_user}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-changeme}
     ports:
       - "3306:3306"
     volumes:
@@ -68,9 +68,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - HOST=0.0.0.0
-      - PORT=3000
+      - NODE_ENV=${NODE_ENV:-production}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-3000}
     depends_on:
       - fastapi
     networks:

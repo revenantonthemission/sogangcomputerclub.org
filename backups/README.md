@@ -13,7 +13,7 @@ The database currently contains **4 memos**:
 ### Create a Backup
 
 ```bash
-cd /home/rvnnt/sogangcomputerclub.org
+cd <project-root-directory>
 ./backup-database.sh
 ```
 
@@ -25,7 +25,7 @@ This will:
 ### Restore from Backup
 
 ```bash
-cd /home/rvnnt/sogangcomputerclub.org
+cd <project-root-directory>
 ./restore-database.sh backups/memo_app_backup_YYYYMMDD_HHMMSS.sql.gz
 ```
 
@@ -47,37 +47,45 @@ This will:
 # Edit crontab
 crontab -e
 
-# Add this line to run backup daily at 3 AM
-0 3 * * * /home/rvnnt/sogangcomputerclub.org/backup-database.sh >> /home/rvnnt/sogangcomputerclub.org/backups/backup.log 2>&1
+# Add this line to run backup daily at 3 AM (adjust path to your installation)
+0 3 * * * /path/to/sogangcomputerclub.org/backup-database.sh >> /path/to/sogangcomputerclub.org/backups/backup.log 2>&1
 ```
 
 ### Or set up hourly backups:
 
 ```bash
-# Backup every hour
-0 * * * * /home/rvnnt/sogangcomputerclub.org/backup-database.sh >> /home/rvnnt/sogangcomputerclub.org/backups/backup.log 2>&1
+# Backup every hour (adjust path to your installation)
+0 * * * * /path/to/sogangcomputerclub.org/backup-database.sh >> /path/to/sogangcomputerclub.org/backups/backup.log 2>&1
 ```
 
 ## Manual Database Operations
 
 ### List all memos:
 ```bash
-docker exec sogangcomputercluborg-mariadb-1 mysql -umemo_user -pphoenix memo_app -e "SELECT * FROM memos;"
+# Load credentials from .env file
+source .env
+docker exec ${CONTAINER_NAME_PREFIX}-mariadb-1 mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} -e "SELECT * FROM memos;"
 ```
 
 ### Count memos:
 ```bash
-docker exec sogangcomputercluborg-mariadb-1 mysql -umemo_user -pphoenix memo_app -e "SELECT COUNT(*) FROM memos;"
+# Load credentials from .env file
+source .env
+docker exec ${CONTAINER_NAME_PREFIX}-mariadb-1 mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} -e "SELECT COUNT(*) FROM memos;"
 ```
 
 ### Create manual backup:
 ```bash
-docker exec sogangcomputercluborg-mariadb-1 mysqldump -umemo_user -pphoenix memo_app > backups/manual_backup_$(date +%Y%m%d_%H%M%S).sql
+# Load credentials from .env file
+source .env
+docker exec ${CONTAINER_NAME_PREFIX}-mariadb-1 mysqldump -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} > backups/manual_backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### Restore manual backup:
 ```bash
-docker exec -i sogangcomputercluborg-mariadb-1 mysql -umemo_user -pphoenix memo_app < backups/manual_backup_YYYYMMDD_HHMMSS.sql
+# Load credentials from .env file
+source .env
+docker exec -i ${CONTAINER_NAME_PREFIX}-mariadb-1 mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} < backups/manual_backup_YYYYMMDD_HHMMSS.sql
 ```
 
 ## Docker Volume Backup
@@ -86,12 +94,12 @@ The database is stored in a Docker volume: `sogangcomputercluborg_mariadb_data`
 
 ### Backup the entire volume:
 ```bash
-docker run --rm -v sogangcomputercluborg_mariadb_data:/data -v /home/rvnnt/sogangcomputerclub.org/backups:/backup ubuntu tar czf /backup/mariadb_volume_$(date +%Y%m%d_%H%M%S).tar.gz -C /data .
+docker run --rm -v sogangcomputercluborg_mariadb_data:/data -v $(pwd)/backups:/backup ubuntu tar czf /backup/mariadb_volume_$(date +%Y%m%d_%H%M%S).tar.gz -C /data .
 ```
 
 ### Restore volume:
 ```bash
-docker run --rm -v sogangcomputercluborg_mariadb_data:/data -v /home/rvnnt/sogangcomputerclub.org/backups:/backup ubuntu tar xzf /backup/mariadb_volume_YYYYMMDD_HHMMSS.tar.gz -C /data
+docker run --rm -v sogangcomputercluborg_mariadb_data:/data -v $(pwd)/backups:/backup ubuntu tar xzf /backup/mariadb_volume_YYYYMMDD_HHMMSS.tar.gz -C /data
 ```
 
 ## Recovery Options
