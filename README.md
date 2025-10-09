@@ -380,7 +380,8 @@ HOST=0.0.0.0
 PORT=3000
 ```
 
-> ⚠️ **보안 중요**:
+> ⚠️ **보안 관련 중요사항**:
+>
 > - `.env` 파일은 Git에 커밋되지 않습니다 (`.gitignore`에 포함됨)
 > - **반드시** 기본 비밀번호(`changeme`, `changeme_root`)를 강력한 비밀번호로 변경하세요
 > - 프로덕션 환경에서는 최소 16자 이상의 복잡한 비밀번호를 사용하세요
@@ -682,9 +683,9 @@ docker-compose exec certbot certbot certificates
 
 ### Git 보안
 
-`.gitignore`에 다음 파일들이 포함되어 있어 민감 정보가 커밋되지 않습니다:
+`.gitignore`에 다음 파일들이 포함되어 있어 환경 변수 등 중요한 정보는 커밋되지 않습니다:
 
-```
+```text
 .env
 .env.*
 !.env.example
