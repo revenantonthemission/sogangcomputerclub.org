@@ -104,13 +104,16 @@ sogangcomputerclub.org/
 │   ├── conftest.py             # pytest 설정 및 fixture
 │   ├── test_health.py          # Health check 테스트
 │   ├── test_memos.py           # 메모 API 단위 테스트
-│   └── integration/            # 통합 테스트
-│       ├── __init__.py
-│       ├── test_docker_services.py  # Docker 서비스 상태 테스트
-│       ├── test_database.py         # MariaDB 연결 테스트
-│       ├── test_redis.py            # Redis 연결 테스트
-│       ├── test_kafka.py            # Kafka 연결 테스트
-│       └── test_api_e2e.py          # E2E API 테스트
+│   ├── integration/            # 통합 테스트
+│   │   ├── __init__.py
+│   │   ├── test_docker_services.py  # Docker 서비스 상태 테스트
+│   │   ├── test_database.py         # MariaDB 연결 테스트
+│   │   ├── test_redis.py            # Redis 연결 테스트
+│   │   ├── test_kafka.py            # Kafka 연결 테스트
+│   │   └── test_api_e2e.py          # E2E API 테스트
+│   └── load/                   # 부하 테스트
+│       ├── locustfile.py       # Locust 트래픽 테스트
+│       └── performance_test.py # 성능 측정 스크립트
 ├── frontend/                   # Frontend (SvelteKit)
 │   ├── src/                    # 소스 코드
 │   │   ├── routes/             # SvelteKit 라우트
@@ -408,6 +411,40 @@ npm run test
 # 개발 서버 실행 (Hot Reload)
 npm run dev
 ```
+
+### Load Tests (부하 테스트)
+
+#### Locust를 이용한 트래픽 테스트
+
+```bash
+# CLI 모드로 실행
+uv run locust -f tests/load/locustfile.py --host=http://localhost:8000
+
+# Web UI 모드로 실행 (http://localhost:8089 접속)
+uv run locust -f tests/load/locustfile.py --host=http://localhost:8000 --web-host=0.0.0.0
+
+# Headless 모드 (자동 실행)
+uv run locust -f tests/load/locustfile.py --host=http://localhost:8000 \
+  --users 100 --spawn-rate 10 --run-time 1m --headless
+```
+
+**테스트 시나리오:**
+- Health check (30%)
+- 메모 목록 조회 (50%)
+- 메모 생성 (10%)
+- 단일 메모 조회 (10%)
+
+#### 성능 테스트
+
+```bash
+# 간단한 성능 측정 스크립트 실행
+uv run python tests/load/performance_test.py
+```
+
+**측정 항목:**
+- 엔드포인트별 응답 시간 (평균, 중앙값, 최소, 최대, 표준편차)
+- 동시 요청 처리 성능 (10명, 50명, 100명)
+- 초당 처리 가능한 요청 수 (RPS)
 
 ### 수동 테스트
 
