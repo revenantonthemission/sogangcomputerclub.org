@@ -10,7 +10,11 @@ describe('NavigationBar', () => {
 		expect(screen.getByText('About Us')).toBeInTheDocument();
 		expect(screen.getByText('Notice')).toBeInTheDocument();
 		expect(screen.getByText('Community')).toBeInTheDocument();
-		expect(screen.getByText('Study')).toBeInTheDocument();
+
+		// "Study" appears multiple times (main nav + submenu), check for at least one
+		const studyElements = screen.getAllByText('Study');
+		expect(studyElements.length).toBeGreaterThan(0);
+
 		expect(screen.getByText('Library')).toBeInTheDocument();
 	});
 
