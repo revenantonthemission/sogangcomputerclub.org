@@ -14,7 +14,7 @@ import httpx
 BASE_URL = "http://localhost:8000"
 
 
-async def test_endpoint_performance(endpoint: str, method: str = "GET", json_data=None, iterations: int = 100):
+async def measure_endpoint_performance(endpoint: str, method: str = "GET", json_data=None, iterations: int = 100):
     """엔드포인트 성능 측정"""
     response_times = []
 
@@ -47,7 +47,7 @@ async def test_endpoint_performance(endpoint: str, method: str = "GET", json_dat
     return None
 
 
-async def test_concurrent_requests(endpoint: str, concurrent_users: int = 10):
+async def measure_concurrent_requests(endpoint: str, concurrent_users: int = 10):
     """동시 요청 처리 성능 측정"""
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
         start_time = time.time()
@@ -87,7 +87,7 @@ async def main():
     ]
 
     for endpoint, method, json_data in endpoints:
-        result = await test_endpoint_performance(endpoint, method, json_data)
+        result = await measure_endpoint_performance(endpoint, method, json_data)
         if result:
             print(f"\n{method} {endpoint}")
             print(f"  평균: {result['avg_ms']} ms")
@@ -106,7 +106,7 @@ async def main():
     concurrent_tests = [10, 50, 100]
 
     for num_users in concurrent_tests:
-        result = await test_concurrent_requests("/health", num_users)
+        result = await measure_concurrent_requests("/health", num_users)
         print(f"\n동시 사용자: {num_users}명")
         print(f"  총 소요 시간: {result['total_time_ms']} ms")
         print(f"  성공한 요청: {result['successful_requests']}")
