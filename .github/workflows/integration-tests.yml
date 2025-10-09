@@ -2,7 +2,7 @@ name: Integration Tests
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'feature/backend-*' ]
   pull_request:
     branches: [ main, master, develop ]
   schedule:
