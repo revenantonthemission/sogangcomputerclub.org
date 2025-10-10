@@ -118,7 +118,5 @@ vite.config.ts.timestamp-*
 *.backup
 *.orig
 
-# Claude AI
-.claude/
-.claude.json
-.claude.json.backup
+# Docs
+/docs
