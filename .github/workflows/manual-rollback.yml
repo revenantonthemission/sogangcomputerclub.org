@@ -134,16 +134,14 @@ jobs:
           echo "Rolling back backend to: ${{ inputs.backend_image }}"
           kubectl set image deployment/fastapi \
             fastapi=${{ inputs.backend_image }} \
-            -n ${{ needs.validate-inputs.outputs.namespace }} \
-            --record
+            -n ${{ needs.validate-inputs.outputs.namespace }}
         fi
 
         if [ -n "${{ inputs.frontend_image }}" ]; then
           echo "Rolling back frontend to: ${{ inputs.frontend_image }}"
           kubectl set image deployment/frontend \
             frontend=${{ inputs.frontend_image }} \
-            -n ${{ needs.validate-inputs.outputs.namespace }} \
-            --record
+            -n ${{ needs.validate-inputs.outputs.namespace }}
         fi
 
     - name: Wait for rollback to complete
