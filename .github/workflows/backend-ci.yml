@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [ main, master, develop, 'feature/backend-*' ]
+    branches: [ main, master, develop, 'feature/backend-*', 'feature/CI-CD' ]
     paths:
       - 'app/**'
       - 'tests/**'
