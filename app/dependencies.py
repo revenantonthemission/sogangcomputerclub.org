@@ -1,9 +1,10 @@
 """
 FastAPI dependency injection functions.
 """
-from fastapi import Request
+from fastapi import Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
+from .repositories.memo import MemoRepository
 
 
 async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
@@ -20,3 +21,8 @@ async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+async def get_memo_repository(session: AsyncSession = Depends(get_db)) -> MemoRepository:
+    """Dependency for MemoRepository."""
+    return MemoRepository(session)

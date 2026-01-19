@@ -15,6 +15,7 @@ dependencies = [
     "sqlalchemy==2.0.32",
     "asyncpg>=0.29.0",
     "greenlet>=3.0.0",
+    "alembic>=1.13.0",
     
     # Cache & Messaging
     "redis==5.1.0",
