@@ -102,6 +102,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx-sogangcomputerclub.conf:/etc/nginx/conf.d/sogangcomputerclub.conf:ro
+      - ./nginx:/etc/nginx/snippets:ro
       - ./nginx.sh:/nginx.sh
       - certbot_certs:/etc/letsencrypt
     entrypoint: /bin/sh
