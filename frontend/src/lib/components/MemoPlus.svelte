@@ -1,13 +1,13 @@
 <script lang="ts">
-    import 'highlight.js/styles/github-dark.css';
-    import { marked } from 'marked';
-    import DOMPurify from 'dompurify';
-    import hljs from 'highlight.js';
-    import { createMemo } from '$lib/api';
+    import "highlight.js/styles/github-dark.css";
+    import { marked } from "marked";
+    import DOMPurify from "dompurify";
+    import hljs from "highlight.js";
+    import { createMemo } from "$lib/services";
 
-    let memoTitle = $state('');
-    let memoText = $state('');
-    let markdownRenderedMemoText = $state('');
+    let memoTitle = $state("");
+    let memoText = $state("");
+    let markdownRenderedMemoText = $state("");
     let isModalOpen = $state(false);
 
     // Configure marked
@@ -17,13 +17,13 @@
                 try {
                     return hljs.highlight(code, { language: lang }).value;
                 } catch (err) {
-                    console.error('Highlight error:', err);
+                    console.error("Highlight error:", err);
                 }
             }
             return hljs.highlightAuto(code).value;
         },
         breaks: true,
-        gfm: true
+        gfm: true,
     });
 
     // Debounce function
@@ -44,7 +44,7 @@
             const rawHtml = marked.parse(text) as string;
             markdownRenderedMemoText = DOMPurify.sanitize(rawHtml);
         } else {
-            markdownRenderedMemoText = '';
+            markdownRenderedMemoText = "";
         }
     }, 300);
 
@@ -59,26 +59,26 @@
     }
 
     function closeModal() {
-        memoTitle = '';
-        memoText = '';
+        memoTitle = "";
+        memoText = "";
         isModalOpen = false;
     }
 
     async function saveMemo() {
         if (!memoTitle.trim() || !memoText.trim()) {
-            alert('제목과 내용을 모두 입력해주세요.');
+            alert("제목과 내용을 모두 입력해주세요.");
             return;
         }
 
         try {
             await createMemo({
                 title: memoTitle.trim(),
-                content: memoText.trim()
+                content: memoText.trim(),
             });
             closeModal();
             location.reload();
         } catch (error) {
-            console.error('Failed to create memo:', error);
+            console.error("Failed to create memo:", error);
             alert(`메모 생성에 실패했습니다. ${error}`);
         }
     }
@@ -87,7 +87,7 @@
 <div
     class="break-inside-avoid w-60 h-60 p-4 bg-[#FFF3DF] border-[#200F4C] border-2 border-dashed cursor-pointer rounded-lg m-4 text-6xl hover:text-7xl transition duration-150 ease-out flex items-center justify-center"
     onclick={openModal}
-    onkeydown={(e) => e.key === 'Enter' && openModal()}
+    onkeydown={(e) => e.key === "Enter" && openModal()}
     role="button"
     tabindex="0"
 >
@@ -95,7 +95,9 @@
 </div>
 
 {#if isModalOpen}
-    <div class="fixed inset-0 bg-black/70 z-40 flex flex-col items-center justify-center">
+    <div
+        class="fixed inset-0 bg-black/70 z-40 flex flex-col items-center justify-center"
+    >
         <div
             class="w-[80vw] h-[80vh] bg-[#200F4C] rounded-lg z-50 p-4 flex flex-col gap-4"
         >
@@ -184,7 +186,7 @@
         background: rgba(0, 0, 0, 0.4);
         padding: 0.2rem 0.4rem;
         border-radius: 3px;
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
         font-size: 0.875em;
     }
 

@@ -3,8 +3,8 @@
     import { marked } from 'marked';
     import DOMPurify from 'dompurify';
     import hljs from 'highlight.js';
-    import type { Memo } from '$lib/api';
-    import { updateMemo, deleteMemo } from '$lib/api';
+    import type { Memo } from '$lib/models';
+    import { updateMemo, deleteMemo } from '$lib/services';
 
     let { memo, memoColor }: { memo: Memo; memoColor: string } = $props();
 

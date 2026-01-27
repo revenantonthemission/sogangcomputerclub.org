@@ -1,40 +1,50 @@
 <script lang="ts">
-    import type { PageData } from './$types';
-    import MemoCard from '$lib/components/MemoCard.svelte';
-    import MemoPlus from '$lib/components/MemoPlus.svelte';
-    import type { Memo } from '$lib/api';
+    import type { PageData } from "./$types";
+    import MemoCard from "$lib/components/MemoCard.svelte";
+    import MemoPlus from "$lib/components/MemoPlus.svelte";
+    import type { Memo } from "$lib/models";
 
     let { data }: { data: PageData } = $props();
 
-    let selectedSort = $state('updated');
+    let selectedSort = $state("updated");
 
     const sortedMemos: Memo[] = $derived.by(() => {
         const originalMemos = [...data.memos];
 
         switch (selectedSort) {
-            case 'newest':
-                return originalMemos.sort((a, b) =>
-                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            case "newest":
+                return originalMemos.sort(
+                    (a, b) =>
+                        new Date(a.created_at).getTime() -
+                        new Date(b.created_at).getTime(),
                 );
 
-            case 'name':
-                return originalMemos.sort((a, b) => a.title.localeCompare(b.title));
-
-            case 'updated':
+            case "name":
                 return originalMemos.sort((a, b) =>
-                    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+                    a.title.localeCompare(b.title),
+                );
+
+            case "updated":
+                return originalMemos.sort(
+                    (a, b) =>
+                        new Date(b.updated_at).getTime() -
+                        new Date(a.updated_at).getTime(),
                 );
 
             default:
-                return originalMemos.sort((a, b) =>
-                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                return originalMemos.sort(
+                    (a, b) =>
+                        new Date(a.created_at).getTime() -
+                        new Date(b.created_at).getTime(),
                 );
         }
     });
 </script>
 
 <div class="p-4 bg-[#FFF3DF]">
-    <label for="sort-select" class="mr-2 font-bold text-[#200F4C]">정렬 기준:</label>
+    <label for="sort-select" class="mr-2 font-bold text-[#200F4C]"
+        >정렬 기준:</label
+    >
     <select
         bind:value={selectedSort}
         id="sort-select"
@@ -47,7 +57,9 @@
     </select>
 </div>
 
-<div class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6 bg-[#FFF3DF] min-h-screen">
+<div
+    class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6 bg-[#FFF3DF] min-h-screen"
+>
     {#each sortedMemos as memo (memo.id)}
         {#if memo.id % 2 == 0}
             <MemoCard {memo} memoColor="#200F4C" />
