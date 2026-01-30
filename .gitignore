@@ -124,7 +124,7 @@ test.db
 
 # IDE
 .claude/
-.agent/rules/
+.agent/
 
 # temporary scripts
 scripts/fix_sequence.py
