@@ -40,6 +40,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._requests[client_ip] = [
             t for t in self._requests[client_ip] if t > cutoff
         ]
+        # 빈 리스트인 경우 키 자체를 삭제하여 메모리 누수 방지
+        if not self._requests[client_ip]:
+            del self._requests[client_ip]
     
     async def dispatch(self, request: Request, call_next):
         # Skip rate limiting for health checks and metrics

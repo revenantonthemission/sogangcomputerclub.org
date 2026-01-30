@@ -82,14 +82,15 @@ class MemoRepository(BaseRepository[dict, int]):
         await self.session.commit()
         return True
     
-    async def search(self, query_str: str) -> List[dict]:
+    async def search(self, query_str: str, skip: int = 0, limit: int = 100) -> List[dict]:
+        """Search memos by keyword with pagination."""
         search_query = f"%{escape_like(query_str)}%"
         stmt = select(memos).where(
             or_(
                 memos.c.title.like(search_query, escape='\\'),
                 memos.c.content.like(search_query, escape='\\')
             )
-        ).order_by(memos.c.id.desc())
+        ).order_by(memos.c.id.desc()).offset(skip).limit(limit)
         
         result = await self.session.execute(stmt)
         return [dict(row) for row in result.mappings().all()]
