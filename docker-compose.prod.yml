@@ -32,8 +32,7 @@ services:
       file: docker-compose.base.yml
       service: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379" # Prod exposes Redis port? It was in original prod.yml
+    # 포트 노출 제거: 프로덕션에서는 내부 네트워크에서만 접근
     networks:
       - backend_sgcc-network
     healthcheck:

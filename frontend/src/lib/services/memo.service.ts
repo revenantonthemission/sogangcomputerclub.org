@@ -10,59 +10,51 @@ const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL || (typeof window === '
     : '/api');
 
 /**
+ * API 요청 래퍼 함수 - 공통 에러 처리 및 JSON 파싱
+ */
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`API Error (${response.status}): ${errorText}`);
+    }
+    return response.json();
+}
+
+/**
  * Fetch all memos with pagination
  */
 export async function getMemos(skip: number = 0, limit: number = 100): Promise<Memo[]> {
-    const response = await fetch(`${API_BASE_URL}/memos/?skip=${skip}&limit=${limit}`);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch memos: ${response.statusText}`);
-    }
-    return response.json();
+    return apiRequest<Memo[]>(`${API_BASE_URL}/memos/?skip=${skip}&limit=${limit}`);
 }
 
 /**
  * Fetch a single memo by ID
  */
 export async function getMemo(id: number): Promise<Memo> {
-    const response = await fetch(`${API_BASE_URL}/memos/${id}`);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch memo ${id}: ${response.statusText}`);
-    }
-    return response.json();
+    return apiRequest<Memo>(`${API_BASE_URL}/memos/${id}`);
 }
 
 /**
  * Create a new memo
  */
 export async function createMemo(memo: MemoCreate): Promise<Memo> {
-    const response = await fetch(`${API_BASE_URL}/memos/`, {
+    return apiRequest<Memo>(`${API_BASE_URL}/memos/`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(memo),
     });
-    if (!response.ok) {
-        throw new Error(`Failed to create memo: ${response.statusText}`);
-    }
-    return response.json();
 }
 
 /**
  * Update an existing memo
  */
 export async function updateMemo(id: number, memo: MemoUpdate): Promise<Memo> {
-    const response = await fetch(`${API_BASE_URL}/memos/${id}`, {
+    return apiRequest<Memo>(`${API_BASE_URL}/memos/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(memo),
     });
-    if (!response.ok) {
-        throw new Error(`Failed to update memo ${id}: ${response.statusText}`);
-    }
-    return response.json();
 }
 
 /**
@@ -73,7 +65,8 @@ export async function deleteMemo(id: number): Promise<void> {
         method: 'DELETE',
     });
     if (!response.ok) {
-        throw new Error(`Failed to delete memo ${id}: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`API Error (${response.status}): ${errorText}`);
     }
 }
 
@@ -81,9 +74,5 @@ export async function deleteMemo(id: number): Promise<void> {
  * Search memos by query
  */
 export async function searchMemos(query: string): Promise<Memo[]> {
-    const response = await fetch(`${API_BASE_URL}/memos/search/?q=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-        throw new Error(`Failed to search memos: ${response.statusText}`);
-    }
-    return response.json();
+    return apiRequest<Memo[]>(`${API_BASE_URL}/memos/search/?q=${encodeURIComponent(query)}`);
 }

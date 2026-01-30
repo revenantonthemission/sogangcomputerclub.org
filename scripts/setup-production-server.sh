@@ -69,16 +69,20 @@ fi
 
 echo -e "${GREEN}Step 8: Creating environment file...${NC}"
 if [ ! -f ".env" ]; then
-    cat > .env << 'EOF'
+    # 보안을 위해 랜덤 비밀번호 자동 생성
+    DB_PASSWORD=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
+    GRAFANA_PASSWORD=$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)
+    
+    cat > .env << EOF
 # GitHub Container Registry
 GITHUB_REPOSITORY=YOUR_USERNAME/sogangcomputerclub.org
 IMAGE_TAG=latest
 
-# Database Configuration
+# Database Configuration (자동 생성된 비밀번호)
 POSTGRES_USER=memo_user
-POSTGRES_PASSWORD=CHANGE_ME_USER_PASSWORD
+POSTGRES_PASSWORD=${DB_PASSWORD}
 POSTGRES_DB=memo_app
-DATABASE_URL=postgresql+asyncpg://memo_user:CHANGE_ME_USER_PASSWORD@postgres:5432/memo_app
+DATABASE_URL=postgresql+asyncpg://memo_user:${DB_PASSWORD}@postgres:5432/memo_app
 
 # Redis Configuration
 REDIS_URL=redis://redis:6379
@@ -86,13 +90,18 @@ REDIS_URL=redis://redis:6379
 # Kafka Configuration
 KAFKA_BOOTSTRAP_SERVERS=kafka:9093
 
+# Grafana Configuration (자동 생성된 비밀번호)
+GRAFANA_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+
 # Application Configuration
 NODE_ENV=production
 HOST=0.0.0.0
 PORT=3000
 EOF
-    echo -e "${YELLOW}Environment file created. Please edit $DEPLOY_DIR/.env and set proper values${NC}"
-    echo -e "${YELLOW}IMPORTANT: Change all passwords and update GITHUB_REPOSITORY${NC}"
+    echo -e "${GREEN}Environment file created with auto-generated passwords${NC}"
+    echo -e "${YELLOW}IMPORTANT: Update GITHUB_REPOSITORY in $DEPLOY_DIR/.env${NC}"
+    echo -e "${YELLOW}Generated DB Password: ${DB_PASSWORD}${NC}"
+    echo -e "${YELLOW}Generated Grafana Password: ${GRAFANA_PASSWORD}${NC}"
 else
     echo -e "${YELLOW}Environment file already exists${NC}"
 fi

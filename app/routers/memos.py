@@ -14,6 +14,15 @@ router = APIRouter(prefix="/memos", tags=["Memos"])
 logger = logging.getLogger(__name__)
 
 
+async def publish_kafka_event(request: Request, topic: str, message: dict) -> None:
+    """Kafka 이벤트 발행 (실패해도 메인 로직에 영향 없음)"""
+    if request.app.state.kafka:
+        try:
+            await request.app.state.kafka.publish(topic, message)
+        except Exception as e:
+            logger.warning(f"Kafka 발행 실패: {e}")
+
+
 @router.post("/", response_model=MemoInDB, status_code=status.HTTP_201_CREATED)
 async def create_memo(
     memo: MemoCreate, 
@@ -25,15 +34,10 @@ async def create_memo(
         new_memo = await repo.create(memo)
         MEMO_COUNT.inc()
 
-        # Publish to Kafka (failure doesn't affect memo creation)
-        if request.app.state.kafka:
-            try:
-                await request.app.state.kafka.publish(
-                    "memo-created",
-                    {"id": new_memo["id"], "title": memo.title, "action": "created"}
-                )
-            except Exception as e:
-                logger.warning(f"Kafka 발행 실패: {e}")
+        # Publish to Kafka
+        await publish_kafka_event(request, "memo-created", {
+            "id": new_memo["id"], "title": memo.title, "action": "created"
+        })
 
         return new_memo
     except Exception as e:
@@ -105,15 +109,10 @@ async def update_memo(
         if updated_memo is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID {memo_id}에 해당하는 메모를 찾을 수 없습니다.")
 
-        # Publish to Kafka (failure doesn't affect memo update)
-        if request.app.state.kafka:
-            try:
-                await request.app.state.kafka.publish(
-                    "memo-updated",
-                    {"id": memo_id, "action": "updated"}
-                )
-            except Exception as e:
-                logger.warning(f"Kafka 발행 실패: {e}")
+        # Publish to Kafka
+        await publish_kafka_event(request, "memo-updated", {
+            "id": memo_id, "action": "updated"
+        })
 
         return updated_memo
     except HTTPException:
@@ -137,15 +136,10 @@ async def delete_memo(
 
         MEMO_COUNT.dec()
 
-        # Publish to Kafka (failure doesn't affect memo deletion)
-        if request.app.state.kafka:
-            try:
-                await request.app.state.kafka.publish(
-                    "memo-deleted",
-                    {"id": memo_id, "action": "deleted"}
-                )
-            except Exception as e:
-                logger.warning(f"Kafka 발행 실패: {e}")
+        # Publish to Kafka
+        await publish_kafka_event(request, "memo-deleted", {
+            "id": memo_id, "action": "deleted"
+        })
 
         return None
     except HTTPException:
