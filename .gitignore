@@ -91,9 +91,6 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
-# Docker
-.dockerignore
-
 # Backups
 backups/*.sql
 backups/*.sql.gz
@@ -124,10 +121,6 @@ vite.config.ts.timestamp-*
 
 # Cleanup
 test.db
-.venv
-venv
-.pytest_cache
-__pycache__
 
 # IDE
 .claude/
