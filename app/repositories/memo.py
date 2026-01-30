@@ -11,6 +11,11 @@ from ..models.memo import memos
 from ..schemas.memo import MemoCreate, MemoUpdate
 
 
+def escape_like(query: str) -> str:
+    """Escape special LIKE pattern characters (%, _, \\) to prevent unexpected matching."""
+    return query.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+
+
 class MemoRepository(BaseRepository[dict, int]):
     """
     SQLAlchemy implementation of the Memo repository.
@@ -78,11 +83,11 @@ class MemoRepository(BaseRepository[dict, int]):
         return True
     
     async def search(self, query_str: str) -> List[dict]:
-        search_query = f"%{query_str}%"
+        search_query = f"%{escape_like(query_str)}%"
         stmt = select(memos).where(
             or_(
-                memos.c.title.like(search_query),
-                memos.c.content.like(search_query)
+                memos.c.title.like(search_query, escape='\\'),
+                memos.c.content.like(search_query, escape='\\')
             )
         ).order_by(memos.c.id.desc())
         

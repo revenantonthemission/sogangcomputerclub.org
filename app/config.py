@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
     
+    # Security - CORS allowed origins (comma-separated in env var)
+    allowed_cors_origins: list[str] = [
+        "https://sogangcomputerclub.org",
+        "https://www.sogangcomputerclub.org",
+        "http://localhost:3000",  # Development only
+    ]
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,

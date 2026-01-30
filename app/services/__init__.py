@@ -1,4 +1,5 @@
-"""Services package."""
-from .kafka import KafkaService, kafka_service
+"""Services layer - business logic and external service integrations."""
+from .kafka import kafka_service, KafkaService
+from .events import EventService
 
-__all__ = ["KafkaService", "kafka_service"]
+__all__ = ["kafka_service", "KafkaService", "EventService"]

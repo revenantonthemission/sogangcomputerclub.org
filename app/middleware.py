@@ -16,7 +16,9 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         
         duration = time.time() - start_time
-        endpoint = request.url.path
+        # Use route template to avoid high cardinality from path params like /memos/123
+        route = request.scope.get("route")
+        endpoint = route.path if route else request.url.path
         method = request.method
         status_code = response.status_code
         

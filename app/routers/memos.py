@@ -40,8 +40,8 @@ async def create_memo(
 
 @router.get("/", response_model=List[MemoInDB])
 async def read_memos(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = Query(default=0, ge=0, description="Number of records to skip"),
+    limit: int = Query(default=100, ge=1, le=100, description="Maximum number of records to return"),
     repo: MemoRepository = Depends(get_memo_repository)
 ):
     """Get all memos."""

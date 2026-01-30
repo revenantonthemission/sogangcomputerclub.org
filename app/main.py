@@ -9,7 +9,6 @@ This is the main application module that wires together all components:
 - Prometheus metrics
 
 The original monolithic code has been refactored into modular components.
-See the original at main.py.backup if needed.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +22,7 @@ from .config import get_settings
 from .database import engine, async_session_factory, metadata
 from .routers import health_router, memos_router
 from .middleware import PrometheusMiddleware
+from .rate_limit import RateLimitMiddleware
 from .services.kafka import kafka_service
 from .metrics import MEMO_COUNT, ACTIVE_CONNECTIONS
 
@@ -135,13 +135,15 @@ app = FastAPI(
 )
 
 # --- Middleware ---
+# Note: Middleware is processed in reverse order (last added = first executed)
 app.add_middleware(PrometheusMiddleware)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst_size=10)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.allowed_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # --- Routers ---
