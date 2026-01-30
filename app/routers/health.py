@@ -1,5 +1,5 @@
 """
-Health check and metrics endpoints.
+상태 확인(Health Check) 및 메트릭 엔드포인트.
 """
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 @router.get("/health")
 async def health_check(request: Request) -> Dict[str, Any]:
-    """System health check endpoint."""
+    """시스템 상태 확인 엔드포인트."""
     health_status = {
         "status": "healthy",
         "timestamp": datetime.now(UTC).isoformat(),
         "services": {}
     }
 
-    # Check Database
+    # 데이터베이스 확인
     try:
         async with request.app.state.db_session_factory() as session:
             await session.execute(sqlalchemy.text("SELECT 1"))
@@ -32,7 +32,7 @@ async def health_check(request: Request) -> Dict[str, Any]:
         health_status["status"] = "degraded"
         logger.error(f"Database health check failed: {e}")
 
-    # Check Redis
+    # Redis 확인
     if request.app.state.redis:
         try:
             await request.app.state.redis.ping()
@@ -45,7 +45,7 @@ async def health_check(request: Request) -> Dict[str, Any]:
         health_status["services"]["redis"] = "unhealthy"
         health_status["status"] = "degraded"
 
-    # Check Kafka
+    # Kafka 확인
     if request.app.state.kafka and request.app.state.kafka.is_connected:
         health_status["services"]["kafka"] = "healthy"
     else:
@@ -57,5 +57,5 @@ async def health_check(request: Request) -> Dict[str, Any]:
 
 @router.get("/metrics")
 async def metrics():
-    """Prometheus metrics endpoint."""
+    """Prometheus 메트릭 엔드포인트."""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

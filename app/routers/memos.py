@@ -1,5 +1,5 @@
 """
-Memo CRUD API endpoints.
+메모 CRUD API 엔드포인트.
 """
 from fastapi import APIRouter, HTTPException, Depends, status, Request, Query
 from typing import List
@@ -29,12 +29,12 @@ async def create_memo(
     request: Request, 
     repo: MemoRepository = Depends(get_memo_repository)
 ):
-    """Create a new memo."""
+    """새 메모를 생성합니다."""
     try:
         new_memo = await repo.create(memo)
         MEMO_COUNT.inc()
 
-        # Publish to Kafka
+        # Kafka 발행
         await publish_kafka_event(request, "memo-created", {
             "id": new_memo["id"], "title": memo.title, "action": "created"
         })
@@ -47,11 +47,11 @@ async def create_memo(
 
 @router.get("/", response_model=List[MemoInDB])
 async def read_memos(
-    skip: int = Query(default=0, ge=0, description="Number of records to skip"),
-    limit: int = Query(default=100, ge=1, le=100, description="Maximum number of records to return"),
+    skip: int = Query(default=0, ge=0, description="건너뛸 레코드 수"),
+    limit: int = Query(default=100, ge=1, le=100, description="반환할 최대 레코드 수"),
     repo: MemoRepository = Depends(get_memo_repository)
 ):
-    """Get all memos."""
+    """모든 메모를 조회합니다."""
     try:
         return await repo.get_all(skip=skip, limit=limit)
     except Exception as e:
@@ -62,11 +62,11 @@ async def read_memos(
 @router.get("/search/", response_model=List[MemoInDB])
 async def search_memos(
     q: str = Query(..., min_length=1, description="검색어"),
-    skip: int = Query(default=0, ge=0, description="Number of records to skip"),
-    limit: int = Query(default=100, ge=1, le=100, description="Maximum number of records to return"),
+    skip: int = Query(default=0, ge=0, description="건너뛸 레코드 수"),
+    limit: int = Query(default=100, ge=1, le=100, description="반환할 최대 레코드 수"),
     repo: MemoRepository = Depends(get_memo_repository)
 ):
-    """Search memos by keyword."""
+    """키워드로 메모를 검색합니다."""
     try:
         return await repo.search(q, skip=skip, limit=limit)
     except Exception as e:
@@ -79,7 +79,7 @@ async def read_memo(
     memo_id: int, 
     repo: MemoRepository = Depends(get_memo_repository)
 ):
-    """Get a specific memo by ID."""
+    """ID로 특정 메모를 조회합니다."""
     try:
         memo = await repo.get(memo_id)
         if memo is None:
@@ -99,9 +99,9 @@ async def update_memo(
     request: Request, 
     repo: MemoRepository = Depends(get_memo_repository)
 ):
-    """Update a memo."""
+    """메모를 수정합니다."""
     try:
-        # Check if there's any data to update
+        # 수정할 데이터가 있는지 확인
         if not memo.model_dump(exclude_unset=True):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="수정할 내용이 없습니다.")
 
@@ -109,7 +109,7 @@ async def update_memo(
         if updated_memo is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID {memo_id}에 해당하는 메모를 찾을 수 없습니다.")
 
-        # Publish to Kafka
+        # Kafka 발행
         await publish_kafka_event(request, "memo-updated", {
             "id": memo_id, "action": "updated"
         })
@@ -128,7 +128,7 @@ async def delete_memo(
     request: Request, 
     repo: MemoRepository = Depends(get_memo_repository)
 ):
-    """Delete a memo."""
+    """메모를 삭제합니다."""
     try:
         deleted = await repo.delete(memo_id)
         if not deleted:
@@ -136,7 +136,7 @@ async def delete_memo(
 
         MEMO_COUNT.dec()
 
-        # Publish to Kafka
+        # Kafka 발행
         await publish_kafka_event(request, "memo-deleted", {
             "id": memo_id, "action": "deleted"
         })

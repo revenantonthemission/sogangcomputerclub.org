@@ -1,5 +1,5 @@
 """
-Kafka producer service for publishing events.
+이벤트 발행을 위한 Kafka Producer 서비스.
 """
 from aiokafka import AIOKafkaProducer
 from ..config import get_settings
@@ -11,13 +11,13 @@ settings = get_settings()
 
 
 class KafkaService:
-    """Service for publishing messages to Kafka topics."""
+    """Kafka 토픽으로 메시지를 발행하는 서비스."""
     
     def __init__(self):
         self.producer: AIOKafkaProducer | None = None
     
     async def start(self):
-        """Start the Kafka producer."""
+        """Kafka Producer를 시작합니다."""
         try:
             self.producer = AIOKafkaProducer(
                 bootstrap_servers=settings.kafka_bootstrap_servers,
@@ -30,13 +30,13 @@ class KafkaService:
             self.producer = None
     
     async def stop(self):
-        """Stop the Kafka producer."""
+        """Kafka Producer를 정지합니다."""
         if self.producer:
             await self.producer.stop()
             logger.info("Kafka producer stopped")
     
     async def publish(self, topic: str, message: dict):
-        """Publish a message to a Kafka topic."""
+        """Kafka 토픽으로 메시지를 발행합니다."""
         if self.producer:
             try:
                 await self.producer.send_and_wait(topic, message)
@@ -45,9 +45,9 @@ class KafkaService:
     
     @property
     def is_connected(self) -> bool:
-        """Check if Kafka producer is connected."""
+        """Kafka Producer 연결 상태를 확인합니다."""
         return self.producer is not None
 
 
-# Singleton instance
+# 싱글톤 인스턴스
 kafka_service = KafkaService()

@@ -49,18 +49,18 @@ async def monitor_database_connections(app: FastAPI):
         await asyncio.sleep(5)
 
 
-# --- Application Lifespan Management ---
+# --- 애플리케이션 수명 주기 관리 ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application startup and shutdown lifecycle management."""
+    """애플리케이션 시작 및 종료 수명 주기 관리."""
     logger.info("Lifespan: 애플리케이션 시작...")
 
-    # Store database resources in app state
+    # 데이터베이스 리소스를 앱 상태(state)에 저장
     app.state.db_engine = engine
     app.state.db_session_factory = async_session_factory
     logger.info("Lifespan: 데이터베이스 리소스가 app.state에 저장되었습니다.")
 
-    # Create tables
+    # 테이블 생성
     try:
         async with engine.begin() as conn:
             await conn.run_sync(metadata.create_all)
@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Lifespan: 데이터베이스 테이블 생성 실패 - {e}")
 
-    # Initialize Redis
+    # Redis 초기화
     try:
         redis_client = redis.from_url(settings.redis_url, decode_responses=True)
         await redis_client.ping()
@@ -78,7 +78,7 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Lifespan: Redis 연결 실패 - {e}")
         app.state.redis = None
 
-    # Initialize Kafka Producer
+    # Kafka Producer 초기화
     try:
         await kafka_service.start()
         app.state.kafka = kafka_service
@@ -89,7 +89,7 @@ async def lifespan(app: FastAPI):
 
     logger.info("Lifespan: 모든 서비스가 성공적으로 시작되었습니다.")
 
-    # Initialize MEMO_COUNT
+    # MEMO_COUNT 메트릭 초기화
     try:
         async with engine.connect() as conn:
             result = await conn.execute(sqlalchemy.text("SELECT COUNT(*) FROM memos"))
@@ -99,12 +99,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Lifespan: Failed to initialize MEMO_COUNT - {e}")
 
-    # Start Background Tasks
+    # 백그라운드 작업 시작
     monitoring_task = asyncio.create_task(monitor_database_connections(app))
 
     yield
 
-    # Shutdown
+    # 종료
     logger.info("Lifespan: 애플리케이션 종료 중...")
 
     if app.state.kafka:
@@ -134,8 +134,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# --- Middleware ---
-# Note: Middleware is processed in reverse order (last added = first executed)
+# --- 미들웨어 ---
+# 참고: 미들웨어는 역순으로 처리됩니다 (마지막에 추가된 것이 가장 먼저 실행됨)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst_size=10)
 app.add_middleware(
@@ -151,7 +151,7 @@ app.include_router(health_router)
 app.include_router(memos_router)
 
 
-# --- Development Server ---
+# --- 개발 서버 ---
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

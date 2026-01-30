@@ -1,94 +1,76 @@
-import pytest
-import pytest_asyncio
 import asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from app.main import app
-from app.dependencies import get_db
+import pytest
+import os
+from unittest.mock import MagicMock, AsyncMock, patch
+import sys
+
+# 1. 환경 변수 오버라이드 (앱 가져오기 전에 수행)
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["SECRET_KEY"] = "testvalidsecretkeythatislongenough"
+os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "localhost:9092"
+
+# 2. app.database 가져오기 전에 create_async_engine 패치
+# Postgres 전용 인자(pool_size 등)와 SQLite 간의 호환성 문제를 해결합니다.
+from sqlalchemy.ext.asyncio import create_async_engine as real_create_async_engine
+import sqlalchemy.ext.asyncio
+
+def shim_create_async_engine(url, **kwargs):
+    if "sqlite" in str(url):
+        # SQLite에 유효하지 않은 인자 제거
+        kwargs.pop("pool_size", None)
+        kwargs.pop("max_overflow", None)
+        kwargs.pop("pool_timeout", None)
+        kwargs.pop("pool_recycle", None)
+        kwargs.pop("pool_pre_ping", None)
+    return real_create_async_engine(url, **kwargs)
+
+sqlalchemy.ext.asyncio.create_async_engine = shim_create_async_engine
+
+# 3. 앱 모듈 가져오기 & 서비스 모킹
 from app.database import metadata
-from typing import AsyncGenerator
 
+# sys.modules에서 Redis/Kafka 모킹
+mock_kafka_module = MagicMock()
+mock_kafka_service = AsyncMock()
+mock_kafka_service.start = AsyncMock()
+mock_kafka_service.stop = AsyncMock()
+mock_kafka_service.publish = AsyncMock()
+mock_kafka_service.is_connected = True
+mock_kafka_module.kafka_service = mock_kafka_service
+sys.modules["app.services.kafka"] = mock_kafka_module
 
-# Test database URL (using SQLite for testing)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+from app.main import app
 
+# 4. 표준 Fixture 정의
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 @pytest.fixture(scope="session")
-def event_loop():
-    """Create an event loop for the test session"""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def test_engine():
-    """Create a test database engine"""
-    engine = create_async_engine(
-        TEST_DATABASE_URL,
-        echo=False,
-        connect_args={"check_same_thread": False}
-    )
-
-    # Create tables
+async def test_db_engine():
+    # 앱의 전역 엔진 사용 (shim이 적용된 상태)
+    from app.database import engine
+    
     async with engine.begin() as conn:
         await conn.run_sync(metadata.create_all)
-
+    
     yield engine
-
-    # Drop tables after test
+    
     async with engine.begin() as conn:
         await conn.run_sync(metadata.drop_all)
-
     await engine.dispose()
 
-
-@pytest_asyncio.fixture(scope="function")
-async def test_session_factory(test_engine):
-    """Create a test session factory"""
-    return async_sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=test_engine,
-        class_=AsyncSession
-    )
-
-
-@pytest_asyncio.fixture(scope="function")
-async def test_db(test_session_factory) -> AsyncGenerator[AsyncSession, None]:
-    """Get a test database session"""
-    async with test_session_factory() as session:
-        yield session
-
-
-@pytest_asyncio.fixture(scope="function")
-async def client(test_engine, test_session_factory):
-    """Create a test client with overridden dependencies"""
-
-    # Override the get_db dependency
-    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-        async with test_session_factory() as session:
-            try:
-                yield session
-            except Exception:
-                await session.rollback()
-                raise
-            finally:
-                await session.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    # Override app state for testing
-    app.state.db_engine = test_engine
-    app.state.db_session_factory = test_session_factory
-    app.state.redis = None  # Disable Redis for tests
-    app.state.kafka = None  # Disable Kafka for tests
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as ac:
-        yield ac
-
-    # Clear overrides
-    app.dependency_overrides.clear()
+@pytest.fixture
+async def client(test_db_engine):
+    # Redis 모킹
+    mock_redis = AsyncMock()
+    
+    # main의 redis 연결 패치
+    with patch("app.main.redis.from_url", return_value=mock_redis):
+        # app.state를 채우기 위해 lifespan 명시적 실행
+        from app.main import app
+        # lifespan 컨텍스트 트리거
+        async with app.router.lifespan_context(app):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+                yield ac

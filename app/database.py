@@ -1,16 +1,16 @@
 """
-Database connection and session management.
+데이터베이스 연결 및 세션 관리.
 """
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from .config import get_settings
 
-# Metadata for all tables
+# 모든 테이블을 위한 메타데이터
 metadata = sqlalchemy.MetaData()
 
 settings = get_settings()
 
-# Create async engine with connection pooling
+# 커넥션 풀링을 포함한 비동기 엔진 생성
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
@@ -21,7 +21,7 @@ engine = create_async_engine(
     pool_pre_ping=True
 )
 
-# Session factory for creating database sessions
+# 데이터베이스 세션 생성을 위한 세션 팩토리
 async_session_factory = async_sessionmaker(
     autocommit=False,
     autoflush=False,

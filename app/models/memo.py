@@ -1,5 +1,5 @@
 """
-Memo database model (SQLAlchemy Table).
+메모 데이터베이스 모델 (SQLAlchemy Table).
 """
 import sqlalchemy
 from ..database import metadata

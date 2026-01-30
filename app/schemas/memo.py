@@ -1,5 +1,5 @@
 """
-Memo Pydantic schemas for request/response validation.
+요청/응답 유효성 검사를 위한 Memo Pydantic 스키마.
 """
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 class MemoBase(BaseModel):
-    """Base memo schema with common fields."""
+    """공통 필드를 포함하는 기본 메모 스키마."""
     title: str = Field(..., min_length=1, max_length=100, description="메모 제목")
     content: str = Field(..., min_length=1, description="메모 내용")
     tags: Optional[List[str]] = Field(default=[], description="태그 목록")
@@ -19,12 +19,12 @@ class MemoBase(BaseModel):
 
 
 class MemoCreate(MemoBase):
-    """Schema for creating a new memo."""
+    """새 메모 생성을 위한 스키마."""
     pass
 
 
 class MemoUpdate(BaseModel):
-    """Schema for updating an existing memo. All fields optional."""
+    """기존 메모 수정을 위한 스키마. 모든 필드는 선택 항목입니다."""
     title: Optional[str] = Field(None, min_length=1, max_length=100)
     content: Optional[str] = Field(None, min_length=1)
     tags: Optional[List[str]] = None
@@ -36,7 +36,7 @@ class MemoUpdate(BaseModel):
 
 
 class MemoInDB(MemoBase):
-    """Schema for memo as stored in database."""
+    """데이터베이스에 저장된 메모 스키마."""
     id: int
     created_at: datetime
     updated_at: datetime
