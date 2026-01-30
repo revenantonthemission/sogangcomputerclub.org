@@ -105,12 +105,15 @@ async def update_memo(
         if updated_memo is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID {memo_id}에 해당하는 메모를 찾을 수 없습니다.")
 
-        # Publish to Kafka
+        # Publish to Kafka (failure doesn't affect memo update)
         if request.app.state.kafka:
-            await request.app.state.kafka.publish(
-                "memo-updated",
-                {"id": memo_id, "action": "updated"}
-            )
+            try:
+                await request.app.state.kafka.publish(
+                    "memo-updated",
+                    {"id": memo_id, "action": "updated"}
+                )
+            except Exception as e:
+                logger.warning(f"Kafka 발행 실패: {e}")
 
         return updated_memo
     except HTTPException:

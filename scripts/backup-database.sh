@@ -13,7 +13,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/memo_app_backup_${TIMESTAMP}.sql"
 CONTAINER_NAME="${CONTAINER_NAME_PREFIX:-sogangcomputercluborg}-postgres-1"
 DB_USER="${POSTGRES_USER:-memo_user}"
-DB_PASS="${POSTGRES_PASSWORD:-phoenix}"
+DB_PASS="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}"
 DB_NAME="${POSTGRES_DB:-memo_app}"
 
 # Keep only the last 30 backups

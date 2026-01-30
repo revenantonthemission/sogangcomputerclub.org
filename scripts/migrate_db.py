@@ -10,25 +10,30 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Database Configurations
-# MariaDB (Source) - using pymysql for sync connection or aiomysql if needed, but let's use sync for migration script simplicity if possible, 
-# or async if we want to reuse project patterns. 
-# Actually, for a one-off script, sync is often easier, but we installed asyncpg. 
-# Let's use the installed drivers. We added pymysql and psycopg2-binary for this script specifically.
-
 # Source: MariaDB
-MARIADB_USER = "memo_user"
-MARIADB_PASSWORD = "phoenix"
-MARIADB_HOST = "localhost"
-MARIADB_PORT = "3307" # Host port
-MARIADB_DB = "memo_app"
+MARIADB_USER = os.environ.get("MARIADB_USER", "memo_user")
+MARIADB_PASSWORD = os.environ.get("MARIADB_PASSWORD")
+MARIADB_HOST = os.environ.get("MARIADB_HOST", "localhost")
+MARIADB_PORT = os.environ.get("MARIADB_PORT", "3307")
+MARIADB_DB = os.environ.get("MARIADB_DB", "memo_app")
+
+if not MARIADB_PASSWORD:
+    logger.error("MARIADB_PASSWORD environment variable is required")
+    exit(1)
+
 MARIADB_URL = f"mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}:{MARIADB_PORT}/{MARIADB_DB}"
 
-# Destination: Postgres (sgcc-db)
-POSTGRES_USER = "admin"
-POSTGRES_PASSWORD = "82292" # From docker inspect
-POSTGRES_HOST = "localhost"
-POSTGRES_PORT = "5432" # Host port
-POSTGRES_DB = "sgcc-backend-db"
+# Destination: Postgres
+POSTGRES_USER = os.environ.get("POSTGRES_USER", "admin")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
+POSTGRES_DB = os.environ.get("POSTGRES_DB", "sgcc-backend-db")
+
+if not POSTGRES_PASSWORD:
+    logger.error("POSTGRES_PASSWORD environment variable is required")
+    exit(1)
+
 POSTGRES_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 def migrate_data():

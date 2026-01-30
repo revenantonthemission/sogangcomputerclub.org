@@ -11,7 +11,7 @@ fi
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 CONTAINER_NAME="${CONTAINER_NAME_PREFIX:-sogangcomputercluborg}-postgres-1"
 DB_USER="${POSTGRES_USER:-memo_user}"
-DB_PASS="${POSTGRES_PASSWORD:-phoenix}"
+DB_PASS="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable is required}"
 DB_NAME="${POSTGRES_DB:-memo_app}"
 
 if [ -z "$1" ]; then
